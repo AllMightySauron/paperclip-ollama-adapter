@@ -10,7 +10,7 @@ export type OllamaConfigFormValues = Partial<{
   model: string;
   baseUrl: string;
   timeoutSec: string | number;
-  think: "true" | "false" | OllamaThinking;
+  think: "" | "true" | "false" | OllamaThinking;
   instructions: string;
   promptTemplate: string;
 }>;
@@ -26,7 +26,7 @@ export function buildConfigFromFormValues(
     timeoutSec: Number(values.timeoutSec ?? DEFAULT_TIMEOUT_SEC)
   };
 
-  if (values.think !== undefined) {
+  if (values.think !== undefined && values.think !== "") {
     config.think = normalizeThinkFormValue(values.think);
   }
   if (values.instructions) {

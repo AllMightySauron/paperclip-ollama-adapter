@@ -5,6 +5,7 @@ import { execute } from "./execute.js";
 import { listOllamaModels } from "./ollama.js";
 import { sessionCodec } from "./session.js";
 import { testEnvironment } from "./test.js";
+import { getConfigSchema } from "../ui/config-schema.js";
 
 export const ollamaAdapter: ServerAdapterModule = {
   type: ADAPTER_TYPE,
@@ -21,6 +22,7 @@ export const ollamaAdapter: ServerAdapterModule = {
     const discovered = await listOllamaModels(DEFAULT_BASE_URL);
     return discovered.map((model) => ({ id: model, label: model }));
   },
+  getConfigSchema,
   agentConfigurationDoc
 };
 

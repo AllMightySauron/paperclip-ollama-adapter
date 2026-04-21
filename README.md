@@ -89,7 +89,6 @@ Supported template variables include `{{agent.id}}`, `{{agent.name}}`, `{{compan
 
 ## Major TODOs
 
-- Fill in UI config fields when Paperclip's external adapter UI API is finalized.
 - Fill in CLI event formatting once execution emits stable structured events.
 - Optionally support streamed Ollama responses and forward chunks to `ctx.onLog`.
 
