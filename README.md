@@ -87,11 +87,6 @@ Prompt template example:
 
 Supported template variables include `{{agent.id}}`, `{{agent.name}}`, `{{company.id}}`, `{{run.id}}`, `{{contextJson}}`, and dotted paths into the wake context such as `{{context.issue.title}}`.
 
-## Major TODOs
-
-- Fill in CLI event formatting once execution emits stable structured events.
-- Optionally support streamed Ollama responses and forward chunks to `ctx.onLog`.
-
 ## Session Persistence
 
 The adapter persists only lightweight continuity metadata in `sessionParams`:
@@ -111,6 +106,11 @@ The adapter persists only lightweight continuity metadata in `sessionParams`:
 ```
 
 Run telemetry such as token counts and durations stays in the run result, not in `sessionParams`. Model output history is not persisted unless conversation memory is added later as an explicit bounded feature.
+
+## Major TODOs
+
+- Fill in CLI event formatting once execution emits stable structured events.
+- Optionally support streamed Ollama responses and forward chunks to `ctx.onLog`.
 
 ## License
 
