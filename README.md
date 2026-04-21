@@ -77,12 +77,41 @@ Example:
 }
 ```
 
+Prompt template example:
+
+```json
+{
+  "promptTemplate": "You are {{agent.name}} working for company {{company.id}}.\n\nRun ID: {{run.id}}\n\nWake context:\n{{contextJson}}\n\nReview the context, identify the next useful action, and respond with a concise execution plan."
+}
+```
+
+Supported template variables include `{{agent.id}}`, `{{agent.name}}`, `{{company.id}}`, `{{run.id}}`, `{{contextJson}}`, and dotted paths into the wake context such as `{{context.issue.title}}`.
+
 ## Major TODOs
 
-- Decide which session metadata should persist in `sessionParams`.
 - Fill in UI config fields when Paperclip's external adapter UI API is finalized.
 - Fill in CLI event formatting once execution emits stable structured events.
 - Optionally support streamed Ollama responses and forward chunks to `ctx.onLog`.
+
+## Session Persistence
+
+The adapter persists only lightweight continuity metadata in `sessionParams`:
+
+```json
+{
+  "sessionId": "ollama:llama3.2:2026-04-21T18:00:00.000Z",
+  "model": "llama3.2",
+  "createdAt": "2026-04-21T18:00:00.000Z",
+  "updatedAt": "2026-04-21T18:05:00.000Z",
+  "metadata": {
+    "endpoint": "http://127.0.0.1:11434/api/chat",
+    "lastCreatedAt": "2026-04-21T18:05:00Z",
+    "doneReason": "stop"
+  }
+}
+```
+
+Run telemetry such as token counts and durations stays in the run result, not in `sessionParams`. Model output history is not persisted unless conversation memory is added later as an explicit bounded feature.
 
 ## License
 

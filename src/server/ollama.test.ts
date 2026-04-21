@@ -96,6 +96,11 @@ describe("invokeOllama", () => {
       costUsd: 0
     });
     expect(result.session?.sessionId).toContain("ollama:llama3.2:");
+    expect(result.session?.metadata).toEqual({
+      endpoint: "http://ollama.local:11434/api/chat",
+      lastCreatedAt: "2026-04-21T10:00:00Z",
+      doneReason: null
+    });
   });
 
   it("returns a structured failure for non-OK responses", async () => {

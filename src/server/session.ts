@@ -1,5 +1,8 @@
 import type { AdapterSessionCodec } from "@paperclipai/adapter-utils";
-import type { OllamaSessionParams } from "../types.js";
+import type {
+  OllamaSessionMetadata,
+  OllamaSessionParams
+} from "../types.js";
 
 export const sessionCodec: AdapterSessionCodec = {
   deserialize(raw: unknown): Record<string, unknown> | null {
@@ -53,8 +56,19 @@ export function createPlaceholderSession(model: string): OllamaSessionParams {
   };
 }
 
-function readMetadata(value: unknown): Record<string, unknown> {
-  return typeof value === "object" && value !== null
-    ? (value as Record<string, unknown>)
-    : {};
+function readMetadata(value: unknown): OllamaSessionMetadata {
+  if (typeof value !== "object" || value === null) {
+    return {};
+  }
+
+  const record = value as Record<string, unknown>;
+  return {
+    ...(typeof record.endpoint === "string" ? { endpoint: record.endpoint } : {}),
+    ...(typeof record.lastCreatedAt === "string" || record.lastCreatedAt === null
+      ? { lastCreatedAt: record.lastCreatedAt }
+      : {}),
+    ...(typeof record.doneReason === "string" || record.doneReason === null
+      ? { doneReason: record.doneReason }
+      : {})
+  };
 }

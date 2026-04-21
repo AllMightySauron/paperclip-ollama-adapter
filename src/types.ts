@@ -20,7 +20,13 @@ export interface OllamaSessionParams {
   model: string;
   createdAt: string;
   updatedAt: string;
-  metadata: Record<string, unknown>;
+  metadata: OllamaSessionMetadata;
+}
+
+export interface OllamaSessionMetadata {
+  endpoint?: string;
+  lastCreatedAt?: string | null;
+  doneReason?: string | null;
 }
 
 export interface OllamaInvocationRequest {

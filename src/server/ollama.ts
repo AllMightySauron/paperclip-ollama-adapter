@@ -118,9 +118,7 @@ function buildSuccessResult(
     model: request.model,
     updatedAt: new Date().toISOString(),
     metadata: {
-      ...session.metadata,
       endpoint,
-      lastModel: readString(record.model) ?? request.model,
       lastCreatedAt: readString(record.created_at) ?? null,
       doneReason: readString(record.done_reason) ?? null
     }
