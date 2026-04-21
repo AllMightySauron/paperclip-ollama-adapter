@@ -1,14 +1,16 @@
 import {
   DEFAULT_BASE_URL,
   DEFAULT_TIMEOUT_SEC,
-  type OllamaAdapterConfig
+  OLLAMA_THINK_LEVELS,
+  type OllamaAdapterConfig,
+  type OllamaThinking
 } from "../types.js";
 
 export type OllamaConfigFormValues = Partial<{
   model: string;
   baseUrl: string;
   timeoutSec: string | number;
-  think: "high" | "low" | "false" | false;
+  think: "true" | "false" | OllamaThinking;
   instructions: string;
   promptTemplate: string;
 }>;
@@ -25,7 +27,7 @@ export function buildConfigFromFormValues(
   };
 
   if (values.think !== undefined) {
-    config.think = values.think === "false" ? false : values.think;
+    config.think = normalizeThinkFormValue(values.think);
   }
   if (values.instructions) {
     config.instructions = values.instructions;
@@ -35,4 +37,17 @@ export function buildConfigFromFormValues(
   }
 
   return config;
+}
+
+function normalizeThinkFormValue(value: "true" | "false" | OllamaThinking): OllamaThinking {
+  if (value === "true") {
+    return true;
+  }
+  if (value === "false") {
+    return false;
+  }
+  if (typeof value === "string" && OLLAMA_THINK_LEVELS.includes(value)) {
+    return value;
+  }
+  return value;
 }

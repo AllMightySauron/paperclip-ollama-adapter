@@ -1,6 +1,7 @@
 import {
   DEFAULT_BASE_URL,
   DEFAULT_TIMEOUT_SEC,
+  OLLAMA_THINK_LEVELS,
   type OllamaAdapterConfig,
   type OllamaThinking
 } from "../types.js";
@@ -32,7 +33,7 @@ export function parseConfig(raw: Record<string, unknown>): ConfigParseResult {
   }
 
   if (raw.think !== undefined && think === undefined) {
-    errors.push('think must be "high", "low", false, or omitted');
+    errors.push('think must be true, false, "low", "medium", "high", or omitted');
   }
 
   if (errors.length > 0 || !model) {
@@ -70,10 +71,29 @@ function parseThink(value: unknown): OllamaThinking | undefined {
   if (value === undefined) {
     return undefined;
   }
-  if (value === false || value === "high" || value === "low") {
+  if (typeof value === "boolean") {
     return value;
   }
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "true") {
+    return true;
+  }
+  if (normalized === "false") {
+    return false;
+  }
+  if (isThinkLevel(normalized)) {
+    return normalized;
+  }
+
   return undefined;
+}
+
+function isThinkLevel(value: string): value is typeof OLLAMA_THINK_LEVELS[number] {
+  return OLLAMA_THINK_LEVELS.includes(value as typeof OLLAMA_THINK_LEVELS[number]);
 }
 
 function isValidHttpUrl(value: string): boolean {

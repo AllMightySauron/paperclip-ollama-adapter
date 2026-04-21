@@ -20,4 +20,26 @@ describe("parseConfig", () => {
       timeoutSec: DEFAULT_TIMEOUT_SEC
     });
   });
+
+  it.each([
+    [true, true],
+    [false, false],
+    ["true", true],
+    ["false", false],
+    ["low", "low"],
+    ["medium", "medium"],
+    ["high", "high"]
+  ])("accepts think=%p", (input, expected) => {
+    const result = parseConfig({ model: "llama3.2", think: input });
+
+    expect(result.errors).toEqual([]);
+    expect(result.config?.think).toBe(expected);
+  });
+
+  it("rejects unsupported think values", () => {
+    const result = parseConfig({ model: "llama3.2", think: "maximum" });
+
+    expect(result.config).toBeNull();
+    expect(result.errors).toContain('think must be true, false, "low", "medium", "high", or omitted');
+  });
 });
