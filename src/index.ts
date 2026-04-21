@@ -1,5 +1,6 @@
 import { ollamaAdapter } from "./server/index.js";
 import { ADAPTER_TYPE } from "./types.js";
+import type { ServerAdapterModule } from "@paperclipai/adapter-utils";
 
 export const adapterType = ADAPTER_TYPE;
 
@@ -23,4 +24,9 @@ export const manifest = {
 };
 
 export { ollamaAdapter };
+
+export function createServerAdapter(): ServerAdapterModule {
+  return ollamaAdapter;
+}
+
 export default ollamaAdapter;

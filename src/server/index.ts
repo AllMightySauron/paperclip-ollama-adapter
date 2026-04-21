@@ -26,6 +26,10 @@ export const ollamaAdapter: ServerAdapterModule = {
   agentConfigurationDoc
 };
 
+export function createServerAdapter(): ServerAdapterModule {
+  return ollamaAdapter;
+}
+
 export { execute } from "./execute.js";
 export { testEnvironment } from "./test.js";
 export { sessionCodec } from "./session.js";
