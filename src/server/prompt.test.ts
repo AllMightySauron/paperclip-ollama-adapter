@@ -48,4 +48,20 @@ describe("buildPrompt", () => {
     expect(prompt).toContain('"taskId": "task-1"');
     expect(prompt).toContain('"wakeReason": "manual"');
   });
+
+  it("adds command tool guidance when command execution is enabled", () => {
+    const prompt = buildPrompt(baseContext, {
+      model: "llama3.2",
+      baseUrl: "http://127.0.0.1:11434",
+      timeoutSec: 120,
+      enableCommandExecution: true,
+      commandTimeoutSec: 120,
+      maxToolCalls: 8
+    });
+
+    expect(prompt).toContain("Command execution is enabled through the run_command tool.");
+    expect(prompt).toContain('Read a file: command="cat", args=["path/to/file.md"]');
+    expect(prompt).toContain('command="ls", args=["cat", "file.md"]');
+    expect(prompt).toContain("Do not put another command name in args.");
+  });
 });

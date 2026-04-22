@@ -41,6 +41,27 @@ describe("buildOllamaChatRequestBody", () => {
       think: "low"
     });
   });
+
+  it("describes run_command with direct executable-plus-args examples", () => {
+    const body = buildOllamaChatRequestBody({
+      baseUrl: "http://127.0.0.1:11434",
+      model: "llama3.2",
+      prompt: "Run a command.",
+      timeoutMs: 120_000,
+      session: null,
+      commandExecution: {
+        enabled: true,
+        cwd: process.cwd(),
+        timeoutSec: 120,
+        maxToolCalls: 8
+      }
+    });
+
+    const toolJson = JSON.stringify(body.tools?.[0]);
+    expect(toolJson).toContain("command='cat', args=['file.md']");
+    expect(toolJson).toContain("Do not put another command name inside args.");
+    expect(toolJson).toContain("Exactly one executable name or path");
+  });
 });
 
 describe("invokeOllama", () => {

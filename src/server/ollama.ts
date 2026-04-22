@@ -249,18 +249,18 @@ const runCommandTool: OllamaToolDefinition = {
   type: "function",
   function: {
     name: RUN_COMMAND_TOOL_NAME,
-    description: "Run a trusted local command directly, without shell evaluation. Use command plus args.",
+    description: "Run exactly one trusted local executable directly, without shell evaluation. Put only the executable name or path in command. Put that executable's arguments in args. Examples: command='cat', args=['file.md']; command='ls', args=['doc/plans']; command='npm', args=['test']. Do not put another command name inside args.",
     parameters: {
       type: "object",
       required: ["command"],
       properties: {
         command: {
           type: "string",
-          description: "Executable name or path, for example npm, node, git, or ./scripts/test.sh"
+          description: "Exactly one executable name or path, for example cat, ls, npm, node, git, or ./scripts/test.sh. Do not include spaces or arguments here."
         },
         args: {
           type: "array",
-          description: "Command arguments as separate strings. Do not include shell operators.",
+          description: "Arguments for the executable as separate strings. Do not include another command name here. For reading a file use command='cat' and args=['path/to/file.md'], not command='ls' with args=['cat','path/to/file.md'].",
           items: { type: "string" }
         },
         cwd: {

@@ -14,7 +14,7 @@ export function buildPrompt(
   config: OllamaAdapterConfig
 ): string {
   const template = config.promptTemplate ?? DEFAULT_PROMPT_TEMPLATE;
-  return renderTemplate(template, {
+  const rendered = renderTemplate(template, {
     agent: ctx.agent,
     company: {
       id: ctx.agent.companyId
@@ -25,4 +25,26 @@ export function buildPrompt(
     context: ctx.context,
     contextJson: JSON.stringify(ctx.context, null, 2)
   });
+
+  if (!config.enableCommandExecution) {
+    return rendered;
+  }
+
+  return `${rendered}
+
+Command execution is enabled through the run_command tool.
+
+Use run_command only when you need local workspace information or need to run a script. The tool accepts exactly one executable in "command" and that executable's arguments in "args".
+
+Correct examples:
+- Read a file: command="cat", args=["path/to/file.md"]
+- List a directory: command="ls", args=["path/to/dir"]
+- Run tests: command="npm", args=["test"]
+
+Incorrect examples:
+- command="ls", args=["cat", "file.md"]
+- command="cat file.md", args=[]
+- command="npm test", args=[]
+
+Do not combine multiple commands in one call. Do not put another command name in args. Do not use shell operators unless you intentionally run a shell executable such as command="sh", args=["-lc", "..."].`;
 }
