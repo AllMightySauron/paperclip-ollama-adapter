@@ -61,9 +61,7 @@ describe("buildPrompt", () => {
 
     expect(prompt).toContain("Command execution is enabled through the run_command tool.");
     expect(prompt).toContain('Read a file: command="cat", args=["path/to/file.md"]');
-    expect(prompt).toContain('Recursively list a directory: command="ls", args=["-R", "path/to/dir"]');
-    expect(prompt).toContain('command="ls", args=["cat", "file.md"]');
-    expect(prompt).toContain('command="ls", args=["ls-R"]');
-    expect(prompt).toContain("Do not put another command name in args.");
+    expect(prompt).toContain('List recursively: command="ls", args=["-R", "path/to/dir"]');
+    expect(prompt).toContain('Do not write command="npm test" or args=["ls-R"].');
   });
 });
