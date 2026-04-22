@@ -249,7 +249,7 @@ const runCommandTool: OllamaToolDefinition = {
   type: "function",
   function: {
     name: RUN_COMMAND_TOOL_NAME,
-    description: "Run exactly one trusted local executable directly, without shell evaluation. Put only the executable name or path in command. Put that executable's arguments in args. Examples: command='cat', args=['file.md']; command='ls', args=['doc/plans']; command='npm', args=['test']. Do not put another command name inside args.",
+    description: "Run exactly one trusted local executable directly, without shell evaluation. Put only the executable name or path in command. Put that executable's arguments in args. Examples: command='cat', args=['file.md']; command='ls', args=['doc/plans']; command='ls', args=['-R','doc']; command='npm', args=['test']. Do not put another command name inside args. Use args=['-R'], not args=['ls-R'].",
     parameters: {
       type: "object",
       required: ["command"],
@@ -260,7 +260,7 @@ const runCommandTool: OllamaToolDefinition = {
         },
         args: {
           type: "array",
-          description: "Arguments for the executable as separate strings. Do not include another command name here. For reading a file use command='cat' and args=['path/to/file.md'], not command='ls' with args=['cat','path/to/file.md'].",
+          description: "Arguments for the executable as separate strings. Do not include another command name here. For reading a file use command='cat' and args=['path/to/file.md'], not command='ls' with args=['cat','path/to/file.md']. For recursive ls use command='ls' and args=['-R','path'], not args=['ls-R'].",
           items: { type: "string" }
         },
         cwd: {

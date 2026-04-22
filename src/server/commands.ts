@@ -42,7 +42,7 @@ export async function runTrustedCommand(
     throw new Error("run_command requires a non-empty command");
   }
 
-  const args = normalizeArgs(input.args);
+  const args = normalizeArgs(input.args, command);
   const cwd = input.cwd?.trim() || options.defaultCwd;
 
   await ensureAbsoluteDirectory(cwd);
@@ -82,25 +82,51 @@ export function parseRunCommandInput(value: unknown): RunCommandInput {
 
   return {
     command: record.command,
-    ...(Array.isArray(record.args) ? { args: normalizeArgs(record.args) } : {}),
+    ...(Array.isArray(record.args) ? { args: normalizeArgs(record.args, record.command) } : {}),
     ...(typeof record.cwd === "string" ? { cwd: record.cwd } : {}),
     ...(typeof record.stdin === "string" ? { stdin: record.stdin } : {})
   };
 }
 
-function normalizeArgs(value: unknown): string[] {
+function normalizeArgs(value: unknown, command: string): string[] {
   if (value === undefined) {
     return [];
   }
   if (!Array.isArray(value)) {
     throw new Error("run_command.args must be an array of strings");
   }
-  return value.map((arg) => {
+  return value.map((arg, index) => {
     if (typeof arg !== "string") {
       throw new Error("run_command.args must be an array of strings");
     }
-    return arg;
+    return normalizeArgArtifact(arg, index, command);
   });
+}
+
+function normalizeArgArtifact(arg: string, index: number, command: string): string {
+  const cleaned = arg
+    .replaceAll("<|\"|", "")
+    .replaceAll("<|'|", "")
+    .replaceAll("<|", "")
+    .replaceAll("|>", "")
+    .replaceAll("\"", "")
+    .trim();
+
+  if (index !== 0) {
+    return cleaned;
+  }
+
+  const trimmedCommand = command.trim();
+  if (!trimmedCommand || !cleaned.startsWith(trimmedCommand)) {
+    return cleaned;
+  }
+
+  const remainder = cleaned.slice(trimmedCommand.length);
+  if (remainder.startsWith("-")) {
+    return remainder;
+  }
+
+  return cleaned;
 }
 
 function readProcessEnv(): Record<string, string> {

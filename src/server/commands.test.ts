@@ -22,4 +22,14 @@ describe("parseRunCommandInput", () => {
       args: ["test", 1]
     })).toThrow("run_command.args must be an array of strings");
   });
+
+  it("normalizes Gemma-style command artifacts from the first arg", () => {
+    expect(parseRunCommandInput({
+      command: "ls",
+      args: ["<|\"|ls-R<|\"|", "doc/plans"]
+    })).toEqual({
+      command: "ls",
+      args: ["-R", "doc/plans"]
+    });
+  });
 });

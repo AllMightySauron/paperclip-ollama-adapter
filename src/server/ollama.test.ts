@@ -59,7 +59,9 @@ describe("buildOllamaChatRequestBody", () => {
 
     const toolJson = JSON.stringify(body.tools?.[0]);
     expect(toolJson).toContain("command='cat', args=['file.md']");
+    expect(toolJson).toContain("command='ls', args=['-R','doc']");
     expect(toolJson).toContain("Do not put another command name inside args.");
+    expect(toolJson).toContain("not args=['ls-R']");
     expect(toolJson).toContain("Exactly one executable name or path");
   });
 });
