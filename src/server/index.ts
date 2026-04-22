@@ -1,11 +1,16 @@
 import type { ServerAdapterModule } from "@paperclipai/adapter-utils";
-import { ADAPTER_TYPE, DEFAULT_BASE_URL } from "../types.js";
+import { ADAPTER_TYPE } from "../types.js";
+import { getConfigSchema } from "../ui/config-schema.js";
 import { agentConfigurationDoc } from "./configuration-doc.js";
 import { execute } from "./execute.js";
-import { listOllamaModels } from "./ollama.js";
 import { sessionCodec } from "./session.js";
 import { testEnvironment } from "./test.js";
-import { getConfigSchema } from "../ui/config-schema.js";
+
+const models = [
+  { id: "llama3.2", label: "Llama 3.2" },
+  { id: "qwen2.5-coder", label: "Qwen 2.5 Coder" },
+  { id: "deepseek-r1", label: "DeepSeek R1" }
+];
 
 export const ollamaAdapter: ServerAdapterModule = {
   type: ADAPTER_TYPE,
@@ -13,14 +18,9 @@ export const ollamaAdapter: ServerAdapterModule = {
   testEnvironment,
   sessionCodec,
   supportsLocalAgentJwt: true,
-  models: [
-    { id: "llama3.2", label: "Llama 3.2" },
-    { id: "qwen2.5-coder", label: "Qwen 2.5 Coder" },
-    { id: "deepseek-r1", label: "DeepSeek R1" }
-  ],
+  models,
   async listModels() {
-    const discovered = await listOllamaModels(DEFAULT_BASE_URL);
-    return discovered.map((model) => ({ id: model, label: model }));
+    return models;
   },
   getConfigSchema,
   agentConfigurationDoc

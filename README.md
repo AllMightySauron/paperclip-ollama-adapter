@@ -4,17 +4,6 @@ A [Paperclip](https://github.com/paperclipai/paperclip) adapter that connects ag
 
 This repository is currently a TypeScript scaffold. It implements the adapter shape described in Paperclip's adapter guide and leaves the major runtime behavior as explicit TODO placeholders.
 
-## What is scaffolded
-
-- `ServerAdapterModule` export for Paperclip server registration.
-- `execute(ctx)` flow with config validation, logging, prompt construction, session restoration, and structured `AdapterExecutionResult` output.
-- `testEnvironment(ctx)` diagnostics with placeholder model discovery.
-- `sessionCodec` for heartbeat session persistence.
-- Shared adapter metadata and a best-effort Paperclip package manifest.
-- UI helper placeholders for building config and parsing run output.
-- CLI helper placeholder for formatting live run events.
-- Vitest tests covering config errors and defaults.
-
 ## Installation
 
 Install via Paperclip's **Adapter Plugin Manager** (Settings > Adapters > External):
