@@ -1,20 +1,8 @@
 import type { AdapterConfigSchema } from "@paperclipai/adapter-utils";
-import { DEFAULT_BASE_URL, DEFAULT_TIMEOUT_SEC } from "../types.js";
+import { DEFAULT_BASE_URL } from "../types.js";
 
 export const ollamaConfigSchema: AdapterConfigSchema = {
   fields: [
-    {
-      key: "model",
-      label: "Model",
-      type: "combobox",
-      required: true,
-      hint: "Installed Ollama model name, for example llama3.2 or qwen2.5-coder.",
-      options: [
-        { label: "Llama 3.2", value: "llama3.2" },
-        { label: "Qwen 2.5 Coder", value: "qwen2.5-coder" },
-        { label: "DeepSeek R1", value: "deepseek-r1" }
-      ]
-    },
     {
       key: "baseUrl",
       label: "Base URL",
@@ -23,31 +11,14 @@ export const ollamaConfigSchema: AdapterConfigSchema = {
       hint: "Ollama server root. The adapter calls /api/chat and /api/tags below this URL."
     },
     {
-      key: "timeoutSec",
-      label: "Timeout Seconds",
-      type: "number",
-      default: DEFAULT_TIMEOUT_SEC,
-      hint: "Maximum seconds to wait for an Ollama request."
-    },
-    {
       key: "logging",
       label: "Detailed Logging",
-      type: "toggle",
-      default: false,
-      hint: "Log prompt rendering, Ollama /api/chat request bodies, raw replies, parsed results, and errors. May include sensitive prompt/context data."
-    },
-    {
-      key: "think",
-      label: "Thinking",
       type: "select",
-      hint: "Optional Ollama thinking control. GPT-OSS expects low, medium, or high.",
+      default: "false",
+      hint: "Log prompt rendering, Ollama /api/chat request bodies, raw replies, parsed results, and errors. May include sensitive prompt/context data.",
       options: [
-        { label: "Default", value: "" },
-        { label: "Enabled", value: "true" },
         { label: "Disabled", value: "false" },
-        { label: "Low", value: "low" },
-        { label: "Medium", value: "medium" },
-        { label: "High", value: "high" }
+        { label: "Enabled", value: "true" }
       ]
     },
     {

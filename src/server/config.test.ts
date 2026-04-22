@@ -33,6 +33,27 @@ describe("parseConfig", () => {
     expect(result.config?.logging).toBe(expected);
   });
 
+  it("reads custom UI values from adapterSchemaValues when Paperclip nests schema fields", () => {
+    const result = parseConfig({
+      model: "llama3.2",
+      adapterSchemaValues: {
+        baseUrl: "http://ollama.example.test:11434",
+        timeoutSec: "60",
+        logging: "true",
+        think: "high"
+      }
+    });
+
+    expect(result.errors).toEqual([]);
+    expect(result.config).toMatchObject({
+      model: "llama3.2",
+      baseUrl: "http://ollama.example.test:11434",
+      timeoutSec: 60,
+      logging: true,
+      think: "high"
+    });
+  });
+
   it.each([
     [true, true],
     [false, false],
@@ -46,6 +67,18 @@ describe("parseConfig", () => {
 
     expect(result.errors).toEqual([]);
     expect(result.config?.think).toBe(expected);
+  });
+
+  it.each([
+    ["thinkingEffort", "low"],
+    ["thinkingEffort", "medium"],
+    ["thinkingEffort", "high"],
+    ["thinkingEffort", "false"]
+  ])("maps Paperclip %s=%p to Ollama think", (key, value) => {
+    const result = parseConfig({ model: "llama3.2", [key]: value });
+
+    expect(result.errors).toEqual([]);
+    expect(result.config?.think).toBe(value === "false" ? false : value);
   });
 
   it("rejects unsupported think values", () => {

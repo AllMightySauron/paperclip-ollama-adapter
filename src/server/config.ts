@@ -13,13 +13,16 @@ export interface ConfigParseResult {
 
 export function parseConfig(raw: Record<string, unknown>): ConfigParseResult {
   const errors: string[] = [];
-  const model = readString(raw.model)?.trim();
-  const baseUrl = readString(raw.baseUrl)?.trim() || DEFAULT_BASE_URL;
-  const timeoutSec = readNumber(raw.timeoutSec, DEFAULT_TIMEOUT_SEC);
-  const logging = readBoolean(raw.logging);
-  const think = parseThink(raw.think);
-  const instructions = readString(raw.instructions);
-  const promptTemplate = readString(raw.promptTemplate);
+  const schemaValues = readRecord(raw.adapterSchemaValues);
+  const model = readString(readConfigValue(raw, schemaValues, "model"))?.trim();
+  const baseUrl = readString(readConfigValue(raw, schemaValues, "baseUrl"))?.trim() || DEFAULT_BASE_URL;
+  const timeoutSec = readNumber(readConfigValue(raw, schemaValues, "timeoutSec"), DEFAULT_TIMEOUT_SEC);
+  const logging = readBoolean(readConfigValue(raw, schemaValues, "logging"));
+  const thinkValue = readConfigValue(raw, schemaValues, "think")
+    ?? readConfigValue(raw, schemaValues, "thinkingEffort");
+  const think = parseThink(thinkValue);
+  const instructions = readString(readConfigValue(raw, schemaValues, "instructions"));
+  const promptTemplate = readString(readConfigValue(raw, schemaValues, "promptTemplate"));
 
   if (!model) {
     errors.push("Missing required field: model");
@@ -33,7 +36,7 @@ export function parseConfig(raw: Record<string, unknown>): ConfigParseResult {
     errors.push("timeoutSec must be greater than 0");
   }
 
-  if (raw.think !== undefined && think === undefined) {
+  if (thinkValue !== undefined && think === undefined) {
     errors.push('think must be true, false, "low", "medium", "high", or omitted');
   }
 
@@ -53,6 +56,20 @@ export function parseConfig(raw: Record<string, unknown>): ConfigParseResult {
     },
     errors
   };
+}
+
+function readConfigValue(
+  raw: Record<string, unknown>,
+  schemaValues: Record<string, unknown>,
+  key: string
+): unknown {
+  return raw[key] ?? schemaValues[key];
+}
+
+function readRecord(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null
+    ? value as Record<string, unknown>
+    : {};
 }
 
 function readString(value: unknown): string | undefined {

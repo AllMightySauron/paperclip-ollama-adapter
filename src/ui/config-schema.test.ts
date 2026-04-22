@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_BASE_URL, DEFAULT_TIMEOUT_SEC } from "../types.js";
+import { DEFAULT_BASE_URL } from "../types.js";
 import { buildConfigFromFormValues } from "./build-config.js";
 import { getConfigSchema } from "./config-schema.js";
 
@@ -8,40 +8,29 @@ describe("getConfigSchema", () => {
     const schema = getConfigSchema();
 
     expect(schema.fields.map((field) => field.key)).toEqual([
-      "model",
       "baseUrl",
-      "timeoutSec",
       "logging",
-      "think",
       "instructions",
       "promptTemplate"
     ]);
-    expect(schema.fields.find((field) => field.key === "model")).toMatchObject({
-      type: "combobox",
-      required: true
-    });
     expect(schema.fields.find((field) => field.key === "baseUrl")?.default)
       .toBe(DEFAULT_BASE_URL);
-    expect(schema.fields.find((field) => field.key === "timeoutSec")?.default)
-      .toBe(DEFAULT_TIMEOUT_SEC);
     expect(schema.fields.find((field) => field.key === "logging")).toMatchObject({
-      type: "toggle",
-      default: false
+      type: "select",
+      default: "false"
     });
   });
 
-  it("uses string values for think options so UI form values can be normalized", () => {
-    const thinkField = getConfigSchema().fields.find((field) => field.key === "think");
+  it("does not define model because Paperclip renders the built-in model control", () => {
+    expect(getConfigSchema().fields.some((field) => field.key === "model")).toBe(false);
+  });
 
-    expect(thinkField?.type).toBe("select");
-    expect(thinkField?.options?.map((option) => option.value)).toEqual([
-      "",
-      "true",
-      "false",
-      "low",
-      "medium",
-      "high"
-    ]);
+  it("does not define think because Paperclip renders the built-in thinking effort control", () => {
+    expect(getConfigSchema().fields.some((field) => field.key === "think")).toBe(false);
+  });
+
+  it("does not define timeoutSec because Paperclip renders the built-in timeout control", () => {
+    expect(getConfigSchema().fields.some((field) => field.key === "timeoutSec")).toBe(false);
   });
 });
 
