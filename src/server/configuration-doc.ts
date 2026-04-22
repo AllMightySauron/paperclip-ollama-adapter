@@ -15,6 +15,8 @@ Core fields:
 - \`instructions\` (string, optional): System instructions for the agent.
 - \`promptTemplate\` (string, optional): Prompt template for Paperclip wake context.
 
+Command execution requires a model that returns native Ollama \`message.tool_calls\` from \`/api/chat\`. Text-only tool-call imitations such as XML-style \`<function_calls>\` blocks are treated as normal assistant text and will not run commands.
+
 Major TODOs before production use:
 - Decide what session state should be persisted across heartbeats.
 - Add Paperclip API fetches for thin context runs.
