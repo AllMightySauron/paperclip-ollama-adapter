@@ -10,6 +10,7 @@ export interface OllamaAdapterConfig {
   model: string;
   baseUrl: string;
   timeoutSec: number;
+  logging?: boolean;
   think?: OllamaThinking;
   instructions?: string;
   promptTemplate?: string;
@@ -37,7 +38,11 @@ export interface OllamaInvocationRequest {
   think?: OllamaThinking;
   timeoutMs: number;
   session: OllamaSessionParams | null;
+  logging?: boolean;
+  onLog?: OllamaLogFn;
 }
+
+export type OllamaLogFn = (stream: "stdout" | "stderr", chunk: string) => Promise<void>;
 
 export interface OllamaChatMessage {
   role: "system" | "user" | "assistant";

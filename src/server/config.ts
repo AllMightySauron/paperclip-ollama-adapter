@@ -16,6 +16,7 @@ export function parseConfig(raw: Record<string, unknown>): ConfigParseResult {
   const model = readString(raw.model)?.trim();
   const baseUrl = readString(raw.baseUrl)?.trim() || DEFAULT_BASE_URL;
   const timeoutSec = readNumber(raw.timeoutSec, DEFAULT_TIMEOUT_SEC);
+  const logging = readBoolean(raw.logging);
   const think = parseThink(raw.think);
   const instructions = readString(raw.instructions);
   const promptTemplate = readString(raw.promptTemplate);
@@ -45,6 +46,7 @@ export function parseConfig(raw: Record<string, unknown>): ConfigParseResult {
       model,
       baseUrl: stripTrailingSlash(baseUrl),
       timeoutSec,
+      ...(logging !== undefined ? { logging } : {}),
       ...(think !== undefined ? { think } : {}),
       ...(instructions ? { instructions } : {}),
       ...(promptTemplate ? { promptTemplate } : {})
@@ -65,6 +67,28 @@ function readNumber(value: unknown, fallback: number): number {
     return Number(value);
   }
   return fallback;
+}
+
+function readBoolean(value: unknown): boolean | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "true") {
+    return true;
+  }
+  if (normalized === "false") {
+    return false;
+  }
+
+  return undefined;
 }
 
 function parseThink(value: unknown): OllamaThinking | undefined {

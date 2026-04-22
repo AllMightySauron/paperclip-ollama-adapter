@@ -125,6 +125,40 @@ describe("invokeOllama", () => {
       errorCode: "ollama_http_error"
     });
   });
+
+  it("logs chat request and reply details when logging is enabled", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+      model: "llama3.2",
+      message: {
+        role: "assistant",
+        content: "Logged reply."
+      },
+      done: true,
+      prompt_eval_count: 2,
+      eval_count: 3
+    })));
+    const logs: Array<{ stream: "stdout" | "stderr"; chunk: string }> = [];
+    vi.stubGlobal("fetch", fetchMock);
+
+    await invokeOllama({
+      baseUrl: "http://ollama.local:11434",
+      model: "llama3.2",
+      prompt: "Log this prompt.",
+      timeoutMs: 120_000,
+      session: null,
+      logging: true,
+      onLog: async (stream, chunk) => {
+        logs.push({ stream, chunk });
+      }
+    });
+
+    const joined = logs.map((log) => log.chunk).join("\n");
+    expect(joined).toContain("Sending Ollama chat request");
+    expect(joined).toContain("Log this prompt.");
+    expect(joined).toContain("Received Ollama chat response");
+    expect(joined).toContain("Logged reply.");
+    expect(joined).toContain("Parsed Ollama chat result");
+  });
 });
 
 describe("parseOllamaTagsResponse", () => {

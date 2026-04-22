@@ -24,14 +24,30 @@ export async function execute(
   }
 
   await ctx.onLog("stdout", `[${ADAPTER_TYPE}] Starting run ${ctx.runId}\n`);
+  await logDebug(ctx, config.logging, "Parsed adapter config", {
+    model: config.model,
+    baseUrl: config.baseUrl,
+    timeoutSec: config.timeoutSec,
+    logging: config.logging ?? false,
+    hasInstructions: Boolean(config.instructions),
+    hasPromptTemplate: Boolean(config.promptTemplate),
+    think: config.think ?? null
+  });
 
   const prompt = buildPrompt(ctx, config);
+  await logDebug(ctx, config.logging, "Rendered prompt", {
+    length: prompt.length,
+    prompt
+  });
+
   const result = await invokeOllama({
     baseUrl: config.baseUrl,
     model: config.model,
     prompt,
     timeoutMs: config.timeoutSec * 1000,
     session: parseSession(ctx.runtime.sessionParams),
+    onLog: ctx.onLog,
+    ...(config.logging !== undefined ? { logging: config.logging } : {}),
     ...(config.instructions ? { instructions: config.instructions } : {}),
     ...(config.think !== undefined ? { think: config.think } : {})
   });
@@ -57,4 +73,17 @@ export async function execute(
     sessionParams: result.session ? { ...result.session } : null,
     sessionDisplayId: result.session?.sessionId ?? null
   };
+}
+
+async function logDebug(
+  ctx: AdapterExecutionContext,
+  enabled: boolean | undefined,
+  message: string,
+  data: Record<string, unknown>
+): Promise<void> {
+  if (!enabled) {
+    return;
+  }
+
+  await ctx.onLog("stdout", `[${ADAPTER_TYPE}:debug] ${message}\n${JSON.stringify(data, null, 2)}\n`);
 }

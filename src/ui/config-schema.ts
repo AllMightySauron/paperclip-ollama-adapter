@@ -30,6 +30,13 @@ export const ollamaConfigSchema: AdapterConfigSchema = {
       hint: "Maximum seconds to wait for an Ollama request."
     },
     {
+      key: "logging",
+      label: "Detailed Logging",
+      type: "toggle",
+      default: false,
+      hint: "Log prompt rendering, Ollama /api/chat request bodies, raw replies, parsed results, and errors. May include sensitive prompt/context data."
+    },
+    {
       key: "think",
       label: "Thinking",
       type: "select",

@@ -48,6 +48,7 @@ When creating or editing an agent, select **Local Ollama** as the adapter type a
 | `model` | Yes | Model ID as the provider lists it (e.g. `qwen-plus`, `deepseek-chat`, `llama3`) |
 | `baseUrl` | No | API endpoint root (default: http://127.0.0.1:11434) |
 | `timeoutSec` | No | Request timeout in seconds (default: 120) |
+| `logging` | No | Enables detailed logs for prompt rendering, Ollama `/api/chat` request bodies, raw replies, parsed results, and errors. Defaults to `false`; logs may include sensitive prompt/context data. |
 | `think` | No | Ollama thinking control: `true`, `false`, `"low"`, `"medium"`, or `"high"`. Most thinking models accept booleans; GPT-OSS expects a level. |
 | `instructions` | No | System prompt: the agent's role, persona, and rules |
 | `promptTemplate` | No | Template used to turn Paperclip wake context into the Ollama prompt |
@@ -61,6 +62,7 @@ Example:
     "model": "llama3.2",
     "baseUrl": "http://127.0.0.1:11434",
     "timeoutSec": 120,
+    "logging": false,
     "instructions": "You are a pragmatic Paperclip agent."
   }
 }

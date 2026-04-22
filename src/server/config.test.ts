@@ -25,6 +25,18 @@ describe("parseConfig", () => {
     [true, true],
     [false, false],
     ["true", true],
+    ["false", false]
+  ])("accepts logging=%p", (input, expected) => {
+    const result = parseConfig({ model: "llama3.2", logging: input });
+
+    expect(result.errors).toEqual([]);
+    expect(result.config?.logging).toBe(expected);
+  });
+
+  it.each([
+    [true, true],
+    [false, false],
+    ["true", true],
     ["false", false],
     ["low", "low"],
     ["medium", "medium"],

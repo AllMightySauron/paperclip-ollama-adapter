@@ -11,6 +11,7 @@ describe("getConfigSchema", () => {
       "model",
       "baseUrl",
       "timeoutSec",
+      "logging",
       "think",
       "instructions",
       "promptTemplate"
@@ -23,6 +24,10 @@ describe("getConfigSchema", () => {
       .toBe(DEFAULT_BASE_URL);
     expect(schema.fields.find((field) => field.key === "timeoutSec")?.default)
       .toBe(DEFAULT_TIMEOUT_SEC);
+    expect(schema.fields.find((field) => field.key === "logging")).toMatchObject({
+      type: "toggle",
+      default: false
+    });
   });
 
   it("uses string values for think options so UI form values can be normalized", () => {
@@ -46,11 +51,13 @@ describe("buildConfigFromFormValues", () => {
       model: " llama3.2 ",
       baseUrl: "",
       timeoutSec: "30",
+      logging: "true",
       think: "medium"
     })).toMatchObject({
       model: "llama3.2",
       baseUrl: DEFAULT_BASE_URL,
       timeoutSec: 30,
+      logging: true,
       think: "medium"
     });
   });

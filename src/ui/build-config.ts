@@ -10,6 +10,7 @@ export type OllamaConfigFormValues = Partial<{
   model: string;
   baseUrl: string;
   timeoutSec: string | number;
+  logging: boolean | "true" | "false";
   think: "" | "true" | "false" | OllamaThinking;
   instructions: string;
   promptTemplate: string;
@@ -26,6 +27,9 @@ export function buildConfigFromFormValues(
     timeoutSec: Number(values.timeoutSec ?? DEFAULT_TIMEOUT_SEC)
   };
 
+  if (values.logging !== undefined) {
+    config.logging = normalizeBooleanFormValue(values.logging);
+  }
   if (values.think !== undefined && values.think !== "") {
     config.think = normalizeThinkFormValue(values.think);
   }
@@ -48,6 +52,16 @@ function normalizeThinkFormValue(value: "true" | "false" | OllamaThinking): Olla
   }
   if (typeof value === "string" && OLLAMA_THINK_LEVELS.includes(value)) {
     return value;
+  }
+  return value;
+}
+
+function normalizeBooleanFormValue(value: boolean | "true" | "false"): boolean {
+  if (value === "true") {
+    return true;
+  }
+  if (value === "false") {
+    return false;
   }
   return value;
 }

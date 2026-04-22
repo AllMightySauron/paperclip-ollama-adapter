@@ -6,6 +6,7 @@ Core fields:
 - \`model\` (string, required): Ollama model name, for example \`llama3.2\` or \`qwen2.5-coder\`.
 - \`baseUrl\` (string, optional): Ollama server root. Defaults to \`http://127.0.0.1:11434\`.
 - \`timeoutSec\` (number, optional): Request timeout in seconds. Defaults to \`120\`.
+- \`logging\` (boolean, optional): Enables detailed Paperclip logs for prompt rendering, Ollama chat request bodies, raw Ollama replies, parsed results, and failures. Defaults to \`false\`.
 - \`think\` (true | false | "low" | "medium" | "high", optional): Ollama thinking control. Most thinking models accept booleans. GPT-OSS expects one of \`"low"\`, \`"medium"\`, or \`"high"\`.
 - \`instructions\` (string, optional): System instructions for the agent.
 - \`promptTemplate\` (string, optional): Prompt template for Paperclip wake context.

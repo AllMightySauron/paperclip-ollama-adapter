@@ -17,6 +17,19 @@ export async function invokeOllama(
   const timeout = setTimeout(() => controller.abort(), request.timeoutMs);
 
   try {
+    await logOllama(request, "stdout", "Sending Ollama chat request", {
+      endpoint: chatUrl,
+      timeoutMs: request.timeoutMs,
+      requestBody: body,
+      session: request.session
+        ? {
+            sessionId: request.session.sessionId,
+            model: request.session.model,
+            updatedAt: request.session.updatedAt
+          }
+        : null
+    });
+
     const response = await fetch(chatUrl, {
       method: "POST",
       headers: {
@@ -27,12 +40,18 @@ export async function invokeOllama(
     });
 
     const payload = await readJsonResponse(response);
+    await logOllama(request, response.ok ? "stdout" : "stderr", "Received Ollama chat response", {
+      endpoint: chatUrl,
+      status: response.status,
+      ok: response.ok,
+      response: payload
+    });
 
     if (!response.ok) {
       const message = readOllamaError(payload)
         ?? `Ollama chat request failed with HTTP ${response.status}`;
 
-      return buildFailureResult({
+      const failure = buildFailureResult({
         request,
         session,
         error: message,
@@ -43,12 +62,24 @@ export async function invokeOllama(
           response: payload
         }
       });
+      await logOllama(request, "stderr", "Ollama chat request failed", {
+        error: failure.error,
+        errorCode: failure.errorCode
+      });
+      return failure;
     }
 
-    return buildSuccessResult(request, session, payload, chatUrl);
+    const result = buildSuccessResult(request, session, payload, chatUrl);
+    await logOllama(request, "stdout", "Parsed Ollama chat result", {
+      model: result.model,
+      usage: result.usage,
+      responseText: result.responseText ?? "",
+      sessionParams: result.session
+    });
+    return result;
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {
-      return buildFailureResult({
+      const failure = buildFailureResult({
         request,
         session,
         error: `Ollama chat request timed out after ${request.timeoutMs}ms`,
@@ -59,9 +90,14 @@ export async function invokeOllama(
           timeoutMs: request.timeoutMs
         }
       });
+      await logOllama(request, "stderr", "Ollama chat request timed out", {
+        error: failure.error,
+        errorCode: failure.errorCode
+      });
+      return failure;
     }
 
-    return buildFailureResult({
+    const failure = buildFailureResult({
       request,
       session,
       error: err instanceof Error ? err.message : String(err),
@@ -70,6 +106,11 @@ export async function invokeOllama(
         endpoint: chatUrl
       }
     });
+    await logOllama(request, "stderr", "Ollama chat request threw", {
+      error: failure.error,
+      errorCode: failure.errorCode
+    });
+    return failure;
   } finally {
     clearTimeout(timeout);
   }
@@ -211,6 +252,19 @@ function readString(value: unknown): string | null {
 
 function readNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+async function logOllama(
+  request: OllamaInvocationRequest,
+  stream: "stdout" | "stderr",
+  message: string,
+  data: Record<string, unknown>
+): Promise<void> {
+  if (!request.logging || !request.onLog) {
+    return;
+  }
+
+  await request.onLog(stream, `[ollama:debug] ${message}\n${JSON.stringify(data, null, 2)}\n`);
 }
 
 export async function listOllamaModels(baseUrl: string): Promise<string[]> {
