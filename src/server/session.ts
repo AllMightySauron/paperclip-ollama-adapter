@@ -21,6 +21,12 @@ export const sessionCodec: AdapterSessionCodec = {
   }
 };
 
+/**
+ * Decodes persisted Paperclip session params.
+ *
+ * Ollama `/api/chat` is stateless here, so the session only tracks adapter-side
+ * identifiers and provider metadata useful for logs and continuation debugging.
+ */
 export function parseSession(raw: unknown): OllamaSessionParams | null {
   if (typeof raw !== "object" || raw === null) {
     return null;
@@ -45,6 +51,7 @@ export function parseSession(raw: unknown): OllamaSessionParams | null {
   };
 }
 
+/** Creates the first adapter-side session marker for a model. */
 export function createPlaceholderSession(model: string): OllamaSessionParams {
   const now = new Date().toISOString();
   return {

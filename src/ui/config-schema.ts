@@ -1,6 +1,12 @@
 import type { AdapterConfigSchema } from "@paperclipai/adapter-utils";
 import { DEFAULT_BASE_URL } from "../types.js";
 
+/**
+ * Custom adapter UI fields.
+ *
+ * Paperclip owns built-in controls such as model, timeout, and thinking effort,
+ * so those fields are intentionally not duplicated here.
+ */
 export const ollamaConfigSchema: AdapterConfigSchema = {
   fields: [
     {
@@ -67,6 +73,7 @@ export const ollamaConfigSchema: AdapterConfigSchema = {
   ]
 };
 
+/** Exposes the UI schema through the server adapter module. */
 export function getConfigSchema(): AdapterConfigSchema {
   return ollamaConfigSchema;
 }

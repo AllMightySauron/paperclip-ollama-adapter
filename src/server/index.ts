@@ -12,6 +12,13 @@ const models = [
   { id: "deepseek-r1", label: "DeepSeek R1" }
 ];
 
+/**
+ * Static server adapter definition consumed by Paperclip.
+ *
+ * `listModels` remains static because Paperclip currently calls it without an
+ * adapter config object. Configured `/api/tags` discovery is handled by the
+ * environment test path where the selected `baseUrl` is available.
+ */
 export const ollamaAdapter: ServerAdapterModule = {
   type: ADAPTER_TYPE,
   execute,
@@ -26,6 +33,7 @@ export const ollamaAdapter: ServerAdapterModule = {
   agentConfigurationDoc
 };
 
+/** Required package-level export used by Paperclip when installing adapters. */
 export function createServerAdapter(): ServerAdapterModule {
   return ollamaAdapter;
 }

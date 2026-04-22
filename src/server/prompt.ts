@@ -9,6 +9,12 @@ Wake context:
 
 Continue the highest-priority work that is appropriate for this heartbeat.`;
 
+/**
+ * Renders the Paperclip wake context into the prompt sent to Ollama.
+ *
+ * The template helper comes from Paperclip adapter utils so custom prompt
+ * templates use the same placeholder behavior as other external adapters.
+ */
 export function buildPrompt(
   ctx: AdapterExecutionContext,
   config: OllamaAdapterConfig
@@ -30,6 +36,8 @@ export function buildPrompt(
     return rendered;
   }
 
+  // Keep this guidance compact: detailed enough to steer tool calls, but not so
+  // verbose that Ollama-hosted models reject the request or degrade schema use.
   return `${rendered}
 
 Command execution is enabled through the run_command tool.

@@ -5,23 +5,37 @@ export const DEFAULT_COMMAND_TIMEOUT_SEC = 120;
 export const DEFAULT_MAX_TOOL_CALLS = 8;
 export const OLLAMA_THINK_LEVELS = ["low", "medium", "high"] as const;
 
+/** Ollama accepts either a boolean thinking flag or one of its named effort levels. */
 export type OllamaThinkLevel = typeof OLLAMA_THINK_LEVELS[number];
 export type OllamaThinking = boolean | OllamaThinkLevel;
 
+/** Fully normalized adapter configuration used by the server runtime. */
 export interface OllamaAdapterConfig {
+  /** Ollama model id, for example "gemma4:31b" or "deepseek-r1". */
   model: string;
+  /** Root URL for the Ollama server. API paths are appended below this prefix. */
   baseUrl: string;
+  /** Maximum number of seconds for a full Ollama run before the adapter aborts. */
   timeoutSec: number;
+  /** When enabled, logs prompts, request payloads, raw responses, and tool activity. */
   logging?: boolean;
+  /** Allows the model to request trusted local command execution via run_command. */
   enableCommandExecution?: boolean;
+  /** Default absolute working directory for model-requested commands. */
   commandCwd?: string;
+  /** Maximum number of seconds allowed for each model-requested command. */
   commandTimeoutSec: number;
+  /** Maximum number of command tool calls allowed during a single adapter run. */
   maxToolCalls: number;
+  /** Optional Ollama thinking configuration mapped from Paperclip's thinking control. */
   think?: OllamaThinking;
+  /** Optional system message sent before the rendered Paperclip prompt. */
   instructions?: string;
+  /** Optional Paperclip template used to render the user prompt. */
   promptTemplate?: string;
 }
 
+/** Session state persisted by Paperclip between adapter runs. */
 export interface OllamaSessionParams {
   sessionId: string;
   model: string;
@@ -30,12 +44,14 @@ export interface OllamaSessionParams {
   metadata: OllamaSessionMetadata;
 }
 
+/** Small set of provider metadata that is useful for debugging later runs. */
 export interface OllamaSessionMetadata {
   endpoint?: string;
   lastCreatedAt?: string | null;
   doneReason?: string | null;
 }
 
+/** Internal request object passed from the Paperclip executor into the Ollama client. */
 export interface OllamaInvocationRequest {
   baseUrl: string;
   model: string;
@@ -58,6 +74,7 @@ export type OllamaSpawnFn = (meta: {
   startedAt: string;
 }) => Promise<void>;
 
+/** Runtime options for the trusted run_command tool. */
 export interface OllamaCommandExecutionOptions {
   enabled: boolean;
   cwd: string;
@@ -65,6 +82,7 @@ export interface OllamaCommandExecutionOptions {
   maxToolCalls: number;
 }
 
+/** Native Ollama tool-call shape returned in message.tool_calls. */
 export interface OllamaToolCall {
   type?: "function";
   function?: {
@@ -74,6 +92,7 @@ export interface OllamaToolCall {
   };
 }
 
+/** Chat message format accepted by Ollama's /api/chat endpoint. */
 export interface OllamaChatMessage {
   role: "system" | "user" | "assistant" | "tool";
   content: string;
@@ -81,6 +100,7 @@ export interface OllamaChatMessage {
   tool_calls?: OllamaToolCall[];
 }
 
+/** Request body sent to Ollama's /api/chat endpoint. */
 export interface OllamaChatRequestBody {
   model: string;
   messages: OllamaChatMessage[];
@@ -89,6 +109,7 @@ export interface OllamaChatRequestBody {
   tools?: OllamaToolDefinition[];
 }
 
+/** Function-tool definition format used by Ollama-compatible models. */
 export interface OllamaToolDefinition {
   type: "function";
   function: {
@@ -102,6 +123,7 @@ export interface OllamaToolDefinition {
   };
 }
 
+/** Provider-neutral execution result returned to Paperclip by the adapter. */
 export interface OllamaInvocationResult {
   success: boolean;
   timedOut: boolean;

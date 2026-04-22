@@ -33,6 +33,13 @@ export interface RunCommandOutput {
   stderr: string;
 }
 
+/**
+ * Executes a model-requested command as a direct child process.
+ *
+ * This intentionally does not invoke a shell. The model must provide one
+ * executable in `command` and individual arguments in `args`, which keeps the
+ * adapter behavior predictable while still supporting trusted local agents.
+ */
 export async function runTrustedCommand(
   input: RunCommandInput,
   options: RunCommandOptions
@@ -70,6 +77,12 @@ export async function runTrustedCommand(
   };
 }
 
+/**
+ * Validates and normalizes the raw JSON arguments emitted by Ollama tool calls.
+ *
+ * The adapter only understands native `message.tool_calls`; text/XML imitation
+ * of tool calls is not parsed here.
+ */
 export function parseRunCommandInput(value: unknown): RunCommandInput {
   if (typeof value !== "object" || value === null) {
     throw new Error("run_command arguments must be an object");
@@ -103,6 +116,13 @@ function normalizeArgs(value: unknown, command: string): string[] {
   });
 }
 
+/**
+ * Cleans small argument artifacts produced by some Ollama-hosted tool callers.
+ *
+ * Example observed from Gemma-family models: `<|"|ls-R<|"|` for a first
+ * argument to `ls`. In that specific first-argument case this becomes `-R`,
+ * while normal arguments are only stripped of wrapper artifacts and quotes.
+ */
 function normalizeArgArtifact(arg: string, index: number, command: string): string {
   const cleaned = arg
     .replaceAll("<|\"|", "")

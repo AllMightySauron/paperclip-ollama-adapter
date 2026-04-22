@@ -13,6 +13,14 @@ export interface ConfigParseResult {
   errors: string[];
 }
 
+/**
+ * Normalizes Paperclip configuration into the adapter's runtime shape.
+ *
+ * Paperclip can provide values either as top-level built-ins (`model`,
+ * `timeoutSec`, `thinkingEffort`) or under `adapterSchemaValues` for custom UI
+ * fields. This parser intentionally accepts both locations so the adapter stays
+ * compatible across Paperclip UI/runtime versions.
+ */
 export function parseConfig(raw: Record<string, unknown>): ConfigParseResult {
   const errors: string[] = [];
   const schemaValues = readRecord(raw.adapterSchemaValues);
@@ -87,6 +95,7 @@ export function parseConfig(raw: Record<string, unknown>): ConfigParseResult {
   };
 }
 
+/** Reads a config key from built-in values first, then custom schema values. */
 function readConfigValue(
   raw: Record<string, unknown>,
   schemaValues: Record<string, unknown>,

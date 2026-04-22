@@ -16,6 +16,15 @@ import { createPlaceholderSession } from "./session.js";
 export const OLLAMA_CHAT_PATH = "/api/chat";
 const RUN_COMMAND_TOOL_NAME = "run_command";
 
+/**
+ * Runs one Paperclip invocation against Ollama's `/api/chat` endpoint.
+ *
+ * When command execution is enabled, this method drives Ollama's native
+ * `message.tool_calls` loop: send chat request, execute requested commands,
+ * append tool results, and ask Ollama for the next assistant turn. Textual
+ * tool-call formats are intentionally ignored because Paperclip can only act
+ * safely on structured tool calls.
+ */
 export async function invokeOllama(
   request: OllamaInvocationRequest
 ): Promise<OllamaInvocationResult> {
@@ -223,6 +232,7 @@ export async function invokeOllama(
   }
 }
 
+/** Builds the exact JSON payload sent to Ollama. Exported for contract tests. */
 export function buildOllamaChatRequestBody(
   request: OllamaInvocationRequest,
   messages = buildInitialMessages(request)
@@ -236,6 +246,7 @@ export function buildOllamaChatRequestBody(
   };
 }
 
+/** Converts adapter instructions and rendered prompt into Ollama chat messages. */
 function buildInitialMessages(request: OllamaInvocationRequest): OllamaChatMessage[] {
   return [
     ...(request.instructions
@@ -245,6 +256,13 @@ function buildInitialMessages(request: OllamaInvocationRequest): OllamaChatMessa
   ];
 }
 
+/**
+ * Native command tool exposed to Ollama-compatible models.
+ *
+ * The schema is deliberately compact. Some Ollama cloud/model combinations have
+ * been sensitive to verbose tool descriptions, so detailed examples live in the
+ * prompt while this schema keeps the machine contract concise.
+ */
 const runCommandTool: OllamaToolDefinition = {
   type: "function",
   function: {
@@ -276,6 +294,7 @@ const runCommandTool: OllamaToolDefinition = {
   }
 };
 
+/** Reads JSON while surfacing provider responses that are not valid JSON. */
 async function readJsonResponse(response: Response): Promise<unknown> {
   const text = await response.text();
   if (text.trim() === "") {
@@ -289,6 +308,7 @@ async function readJsonResponse(response: Response): Promise<unknown> {
   }
 }
 
+/** Maps a successful Ollama response into Paperclip's provider-neutral result. */
 function buildSuccessResult(
   request: OllamaInvocationRequest,
   session: ReturnType<typeof createPlaceholderSession>,
@@ -326,6 +346,7 @@ function buildSuccessResult(
   };
 }
 
+/** Creates a failed invocation result while preserving raw provider context. */
 function buildFailureResult(args: {
   request: OllamaInvocationRequest;
   session: ReturnType<typeof createPlaceholderSession>;
@@ -398,6 +419,7 @@ function readAssistantMessage(record: Record<string, unknown>): OllamaChatMessag
   };
 }
 
+/** Executes one supported native tool call and returns the result as JSON data. */
 async function executeToolCall(
   request: OllamaInvocationRequest,
   toolCall: OllamaToolCall
@@ -472,6 +494,7 @@ async function logOllama(
   await request.onLog(stream, `[ollama:debug] ${message}\n${JSON.stringify(data, null, 2)}\n`);
 }
 
+/** Discovers locally available Ollama model names via `/api/tags`. */
 export async function listOllamaModels(baseUrl: string): Promise<string[]> {
   const tagsUrl = buildOllamaApiUrl(baseUrl, "/api/tags");
   const response = await fetch(tagsUrl, { method: "GET" });
@@ -484,12 +507,14 @@ export async function listOllamaModels(baseUrl: string): Promise<string[]> {
   return parseOllamaTagsResponse(payload);
 }
 
+/** Joins a configured Ollama root URL and API path without duplicating slashes. */
 export function buildOllamaApiUrl(baseUrl: string, path: string): string {
   const prefix = baseUrl.replace(/\/+$/, "");
   const suffix = path.startsWith("/") ? path : `/${path}`;
   return `${prefix}${suffix}`;
 }
 
+/** Parses the two common model-name fields returned by Ollama `/api/tags`. */
 export function parseOllamaTagsResponse(payload: unknown): string[] {
   if (typeof payload !== "object" || payload === null) {
     throw new Error("Ollama /api/tags response must be an object");

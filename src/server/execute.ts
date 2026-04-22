@@ -8,6 +8,12 @@ import { invokeOllama } from "./ollama.js";
 import { buildPrompt } from "./prompt.js";
 import { parseSession } from "./session.js";
 
+/**
+ * Paperclip server entrypoint for a single adapter run.
+ *
+ * It validates config, renders the Paperclip prompt, calls Ollama, and maps the
+ * provider result back into Paperclip's `AdapterExecutionResult` contract.
+ */
 export async function execute(
   ctx: AdapterExecutionContext
 ): Promise<AdapterExecutionResult> {
@@ -87,6 +93,7 @@ export async function execute(
   };
 }
 
+/** Emits structured debug logs only when the adapter logging toggle is enabled. */
 async function logDebug(
   ctx: AdapterExecutionContext,
   enabled: boolean | undefined,
