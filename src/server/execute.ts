@@ -29,6 +29,10 @@ export async function execute(
     baseUrl: config.baseUrl,
     timeoutSec: config.timeoutSec,
     logging: config.logging ?? false,
+    enableCommandExecution: config.enableCommandExecution ?? false,
+    commandCwd: config.commandCwd ?? null,
+    commandTimeoutSec: config.commandTimeoutSec,
+    maxToolCalls: config.maxToolCalls,
     hasInstructions: Boolean(config.instructions),
     hasPromptTemplate: Boolean(config.promptTemplate),
     think: config.think ?? null
@@ -46,7 +50,15 @@ export async function execute(
     prompt,
     timeoutMs: config.timeoutSec * 1000,
     session: parseSession(ctx.runtime.sessionParams),
+    runId: ctx.runId,
     onLog: ctx.onLog,
+    ...(ctx.onSpawn ? { onSpawn: ctx.onSpawn } : {}),
+    commandExecution: {
+      enabled: config.enableCommandExecution ?? false,
+      cwd: config.commandCwd ?? process.cwd(),
+      timeoutSec: config.commandTimeoutSec,
+      maxToolCalls: config.maxToolCalls
+    },
     ...(config.logging !== undefined ? { logging: config.logging } : {}),
     ...(config.instructions ? { instructions: config.instructions } : {}),
     ...(config.think !== undefined ? { think: config.think } : {})

@@ -1,5 +1,7 @@
 import {
   DEFAULT_BASE_URL,
+  DEFAULT_COMMAND_TIMEOUT_SEC,
+  DEFAULT_MAX_TOOL_CALLS,
   DEFAULT_TIMEOUT_SEC,
   OLLAMA_THINK_LEVELS,
   type OllamaAdapterConfig,
@@ -18,6 +20,17 @@ export function parseConfig(raw: Record<string, unknown>): ConfigParseResult {
   const baseUrl = readString(readConfigValue(raw, schemaValues, "baseUrl"))?.trim() || DEFAULT_BASE_URL;
   const timeoutSec = readNumber(readConfigValue(raw, schemaValues, "timeoutSec"), DEFAULT_TIMEOUT_SEC);
   const logging = readBoolean(readConfigValue(raw, schemaValues, "logging"));
+  const enableCommandExecution = readBoolean(readConfigValue(raw, schemaValues, "enableCommandExecution")) ?? false;
+  const commandCwd = readString(readConfigValue(raw, schemaValues, "commandCwd"))
+    ?? readString(readConfigValue(raw, schemaValues, "cwd"));
+  const commandTimeoutSec = readNumber(
+    readConfigValue(raw, schemaValues, "commandTimeoutSec"),
+    DEFAULT_COMMAND_TIMEOUT_SEC
+  );
+  const maxToolCalls = readNumber(
+    readConfigValue(raw, schemaValues, "maxToolCalls"),
+    DEFAULT_MAX_TOOL_CALLS
+  );
   const thinkValue = readConfigValue(raw, schemaValues, "think")
     ?? readConfigValue(raw, schemaValues, "thinkingEffort");
   const think = parseThink(thinkValue);
@@ -36,6 +49,18 @@ export function parseConfig(raw: Record<string, unknown>): ConfigParseResult {
     errors.push("timeoutSec must be greater than 0");
   }
 
+  if (!Number.isFinite(commandTimeoutSec) || commandTimeoutSec <= 0) {
+    errors.push("commandTimeoutSec must be greater than 0");
+  }
+
+  if (!Number.isInteger(maxToolCalls) || maxToolCalls <= 0) {
+    errors.push("maxToolCalls must be a positive integer");
+  }
+
+  if (enableCommandExecution && commandCwd !== undefined && commandCwd.trim() === "") {
+    errors.push("commandCwd cannot be empty when command execution is enabled");
+  }
+
   if (thinkValue !== undefined && think === undefined) {
     errors.push('think must be true, false, "low", "medium", "high", or omitted');
   }
@@ -49,6 +74,10 @@ export function parseConfig(raw: Record<string, unknown>): ConfigParseResult {
       model,
       baseUrl: stripTrailingSlash(baseUrl),
       timeoutSec,
+      enableCommandExecution,
+      commandTimeoutSec,
+      maxToolCalls,
+      ...(commandCwd ? { commandCwd } : {}),
       ...(logging !== undefined ? { logging } : {}),
       ...(think !== undefined ? { think } : {}),
       ...(instructions ? { instructions } : {}),

@@ -159,6 +159,75 @@ describe("invokeOllama", () => {
     expect(joined).toContain("Logged reply.");
     expect(joined).toContain("Parsed Ollama chat result");
   });
+
+  it("executes run_command tool calls and sends results back to Ollama", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        model: "llama3.2",
+        message: {
+          role: "assistant",
+          content: "",
+          tool_calls: [
+            {
+              type: "function",
+              function: {
+                name: "run_command",
+                arguments: {
+                  command: process.execPath,
+                  args: ["-e", "console.log('tool ok')"]
+                }
+              }
+            }
+          ]
+        },
+        done: true,
+        prompt_eval_count: 3,
+        eval_count: 4
+      })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        model: "llama3.2",
+        message: {
+          role: "assistant",
+          content: "The command printed tool ok."
+        },
+        done: true,
+        prompt_eval_count: 5,
+        eval_count: 6
+      })));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const logs: Array<{ stream: "stdout" | "stderr"; chunk: string }> = [];
+    const result = await invokeOllama({
+      baseUrl: "http://ollama.local:11434",
+      model: "llama3.2",
+      prompt: "Run a command.",
+      timeoutMs: 120_000,
+      session: null,
+      runId: "run-tool-test",
+      onLog: async (stream, chunk) => {
+        logs.push({ stream, chunk });
+      },
+      commandExecution: {
+        enabled: true,
+        cwd: process.cwd(),
+        timeoutSec: 30,
+        maxToolCalls: 2
+      }
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.responseText).toBe("The command printed tool ok.");
+    expect(result.usage).toEqual({
+      inputTokens: 8,
+      outputTokens: 10,
+      totalTokens: 18
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0]?.[1]?.body).toContain("\"tools\"");
+    expect(fetchMock.mock.calls[1]?.[1]?.body).toContain("\"role\":\"tool\"");
+    expect(fetchMock.mock.calls[1]?.[1]?.body).toContain("tool ok");
+    expect(logs.map((log) => log.chunk).join("\n")).toContain("[ollama:tool] run_command");
+  });
 });
 
 describe("parseOllamaTagsResponse", () => {

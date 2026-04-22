@@ -11,6 +11,10 @@ export type OllamaConfigFormValues = Partial<{
   baseUrl: string;
   timeoutSec: string | number;
   logging: boolean | "true" | "false";
+  enableCommandExecution: boolean | "true" | "false";
+  commandCwd: string;
+  commandTimeoutSec: string | number;
+  maxToolCalls: string | number;
   think: "" | "true" | "false" | OllamaThinking;
   instructions: string;
   promptTemplate: string;
@@ -29,6 +33,18 @@ export function buildConfigFromFormValues(
 
   if (values.logging !== undefined) {
     config.logging = normalizeBooleanFormValue(values.logging);
+  }
+  if (values.enableCommandExecution !== undefined) {
+    config.enableCommandExecution = normalizeBooleanFormValue(values.enableCommandExecution);
+  }
+  if (values.commandCwd) {
+    config.commandCwd = values.commandCwd;
+  }
+  if (values.commandTimeoutSec !== undefined) {
+    config.commandTimeoutSec = Number(values.commandTimeoutSec);
+  }
+  if (values.maxToolCalls !== undefined) {
+    config.maxToolCalls = Number(values.maxToolCalls);
   }
   if (values.think !== undefined && values.think !== "") {
     config.think = normalizeThinkFormValue(values.think);

@@ -38,8 +38,11 @@ describe("parseConfig", () => {
       model: "llama3.2",
       adapterSchemaValues: {
         baseUrl: "http://ollama.example.test:11434",
-        timeoutSec: "60",
         logging: "true",
+        enableCommandExecution: "true",
+        commandCwd: "/tmp",
+        commandTimeoutSec: "15",
+        maxToolCalls: "3",
         think: "high"
       }
     });
@@ -48,10 +51,37 @@ describe("parseConfig", () => {
     expect(result.config).toMatchObject({
       model: "llama3.2",
       baseUrl: "http://ollama.example.test:11434",
-      timeoutSec: 60,
+      timeoutSec: DEFAULT_TIMEOUT_SEC,
       logging: true,
+      enableCommandExecution: true,
+      commandCwd: "/tmp",
+      commandTimeoutSec: 15,
+      maxToolCalls: 3,
       think: "high"
     });
+  });
+
+  it("applies command execution defaults", () => {
+    const result = parseConfig({ model: "llama3.2" });
+
+    expect(result.errors).toEqual([]);
+    expect(result.config).toMatchObject({
+      enableCommandExecution: false,
+      commandTimeoutSec: 120,
+      maxToolCalls: 8
+    });
+  });
+
+  it("rejects invalid command execution limits", () => {
+    const result = parseConfig({
+      model: "llama3.2",
+      commandTimeoutSec: 0,
+      maxToolCalls: 0
+    });
+
+    expect(result.config).toBeNull();
+    expect(result.errors).toContain("commandTimeoutSec must be greater than 0");
+    expect(result.errors).toContain("maxToolCalls must be a positive integer");
   });
 
   it.each([

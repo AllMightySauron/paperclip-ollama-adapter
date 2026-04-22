@@ -49,6 +49,10 @@ When creating or editing an agent, select **Local Ollama** as the adapter type a
 | `baseUrl` | No | API endpoint root (default: http://127.0.0.1:11434) |
 | `timeoutSec` | No | Paperclip's built-in timeout control. The adapter uses this as the Ollama request timeout in seconds. |
 | `logging` | No | Enables detailed logs for prompt rendering, Ollama `/api/chat` request bodies, raw replies, parsed results, and errors. Defaults to `false`; logs may include sensitive prompt/context data. |
+| `enableCommandExecution` | No | Enables trusted local command execution through Ollama tool calls. Defaults to `false`. |
+| `commandCwd` | No | Absolute working directory for model-requested commands. Defaults to Paperclip's working directory when provided, otherwise the adapter process directory. |
+| `commandTimeoutSec` | No | Maximum seconds each model-requested command may run (default: 120). |
+| `maxToolCalls` | No | Maximum number of command tool calls allowed in one run (default: 8). |
 | `thinkingEffort` | No | Paperclip's built-in thinking effort control. The adapter maps `low`, `medium`, `high`, `true`, or `false` into Ollama's `think` request option. |
 | `instructions` | No | System prompt: the agent's role, persona, and rules |
 | `promptTemplate` | No | Template used to turn Paperclip wake context into the Ollama prompt |
@@ -63,6 +67,7 @@ Example:
     "baseUrl": "http://127.0.0.1:11434",
     "timeoutSec": 120,
     "logging": false,
+    "enableCommandExecution": false,
     "instructions": "You are a pragmatic Paperclip agent."
   }
 }
@@ -77,6 +82,22 @@ Prompt template example:
 ```
 
 Supported template variables include `{{agent.id}}`, `{{agent.name}}`, `{{company.id}}`, `{{run.id}}`, `{{contextJson}}`, and dotted paths into the wake context such as `{{context.issue.title}}`.
+
+## Command Execution
+
+When `enableCommandExecution` is enabled, the adapter exposes a trusted local `run_command` tool to Ollama. The model can request commands in direct executable-plus-args form:
+
+```json
+{
+  "command": "npm",
+  "args": ["test"],
+  "cwd": "/absolute/path/to/project"
+}
+```
+
+Commands are run with Paperclip's child process helper, so stdout and stderr stream into the run logs. This intentionally does not evaluate shell strings; shell operators such as `&&`, pipes, redirects, and command substitution are not interpreted unless you explicitly run a shell executable yourself, for example `sh` with `["-lc", "..."]`.
+
+This is a trusted local agent capability. Enable it only when the Ollama model is allowed to run scripts and modify files on the Paperclip host.
 
 ## Session Persistence
 

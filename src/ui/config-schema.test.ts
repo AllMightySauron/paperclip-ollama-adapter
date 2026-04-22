@@ -10,12 +10,20 @@ describe("getConfigSchema", () => {
     expect(schema.fields.map((field) => field.key)).toEqual([
       "baseUrl",
       "logging",
+      "enableCommandExecution",
+      "commandCwd",
+      "commandTimeoutSec",
+      "maxToolCalls",
       "instructions",
       "promptTemplate"
     ]);
     expect(schema.fields.find((field) => field.key === "baseUrl")?.default)
       .toBe(DEFAULT_BASE_URL);
     expect(schema.fields.find((field) => field.key === "logging")).toMatchObject({
+      type: "select",
+      default: "false"
+    });
+    expect(schema.fields.find((field) => field.key === "enableCommandExecution")).toMatchObject({
       type: "select",
       default: "false"
     });
@@ -41,12 +49,20 @@ describe("buildConfigFromFormValues", () => {
       baseUrl: "",
       timeoutSec: "30",
       logging: "true",
+      enableCommandExecution: "true",
+      commandCwd: "/tmp",
+      commandTimeoutSec: "20",
+      maxToolCalls: "4",
       think: "medium"
     })).toMatchObject({
       model: "llama3.2",
       baseUrl: DEFAULT_BASE_URL,
       timeoutSec: 30,
       logging: true,
+      enableCommandExecution: true,
+      commandCwd: "/tmp",
+      commandTimeoutSec: 20,
+      maxToolCalls: 4,
       think: "medium"
     });
   });

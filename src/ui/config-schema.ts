@@ -22,6 +22,37 @@ export const ollamaConfigSchema: AdapterConfigSchema = {
       ]
     },
     {
+      key: "enableCommandExecution",
+      label: "Command Execution",
+      type: "select",
+      default: "false",
+      hint: "Allow this trusted local adapter to run direct commands requested by the model. This can modify files and execute scripts.",
+      options: [
+        { label: "Disabled", value: "false" },
+        { label: "Enabled", value: "true" }
+      ]
+    },
+    {
+      key: "commandCwd",
+      label: "Command Working Directory",
+      type: "text",
+      hint: "Absolute directory for model-requested commands. Defaults to Paperclip's built-in working directory when provided, otherwise the adapter process directory."
+    },
+    {
+      key: "commandTimeoutSec",
+      label: "Command Timeout Seconds",
+      type: "number",
+      default: 120,
+      hint: "Maximum seconds each model-requested command may run."
+    },
+    {
+      key: "maxToolCalls",
+      label: "Max Tool Calls",
+      type: "number",
+      default: 8,
+      hint: "Maximum number of command tool calls allowed during one agent run."
+    },
+    {
       key: "instructions",
       label: "Instructions",
       type: "textarea",

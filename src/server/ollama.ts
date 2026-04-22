@@ -1,82 +1,189 @@
 import type {
   OllamaChatRequestBody,
+  OllamaChatMessage,
   OllamaInvocationRequest,
-  OllamaInvocationResult
+  OllamaInvocationResult,
+  OllamaToolCall,
+  OllamaToolDefinition
 } from "../types.js";
+import {
+  parseRunCommandInput,
+  runTrustedCommand,
+  type RunCommandOutput
+} from "./commands.js";
 import { createPlaceholderSession } from "./session.js";
 
 export const OLLAMA_CHAT_PATH = "/api/chat";
+const RUN_COMMAND_TOOL_NAME = "run_command";
 
 export async function invokeOllama(
   request: OllamaInvocationRequest
 ): Promise<OllamaInvocationResult> {
   const session = request.session ?? createPlaceholderSession(request.model);
   const chatUrl = buildOllamaApiUrl(request.baseUrl, OLLAMA_CHAT_PATH);
-  const body = buildOllamaChatRequestBody(request);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), request.timeoutMs);
+  const messages = buildInitialMessages(request);
+  const rawResponses: unknown[] = [];
+  const toolResults: RunCommandOutput[] = [];
+  let executedToolCalls = 0;
+  const usage = {
+    inputTokens: 0,
+    outputTokens: 0,
+    totalTokens: 0
+  };
 
   try {
-    await logOllama(request, "stdout", "Sending Ollama chat request", {
-      endpoint: chatUrl,
-      timeoutMs: request.timeoutMs,
-      requestBody: body,
-      session: request.session
-        ? {
-            sessionId: request.session.sessionId,
-            model: request.session.model,
-            updatedAt: request.session.updatedAt
+    const maxTurns = request.commandExecution?.enabled
+      ? request.commandExecution.maxToolCalls + 1
+      : 1;
+
+    for (let turn = 0; turn < maxTurns; turn += 1) {
+      const body = buildOllamaChatRequestBody(request, messages);
+      await logOllama(request, "stdout", "Sending Ollama chat request", {
+        endpoint: chatUrl,
+        timeoutMs: request.timeoutMs,
+        turn,
+        requestBody: body,
+        session: request.session
+          ? {
+              sessionId: request.session.sessionId,
+              model: request.session.model,
+              updatedAt: request.session.updatedAt
+            }
+          : null
+      });
+
+      const response = await fetch(chatUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+
+      const payload = await readJsonResponse(response);
+      rawResponses.push(payload);
+      await logOllama(request, response.ok ? "stdout" : "stderr", "Received Ollama chat response", {
+        endpoint: chatUrl,
+        status: response.status,
+        ok: response.ok,
+        turn,
+        response: payload
+      });
+
+      if (!response.ok) {
+        const message = readOllamaError(payload)
+          ?? `Ollama chat request failed with HTTP ${response.status}`;
+
+        const failure = buildFailureResult({
+          request,
+          session,
+          error: message,
+          errorCode: "ollama_http_error",
+          raw: {
+            endpoint: chatUrl,
+            status: response.status,
+            response: payload,
+            responses: rawResponses,
+            toolResults
           }
-        : null
-    });
+        });
+        await logOllama(request, "stderr", "Ollama chat request failed", {
+          error: failure.error,
+          errorCode: failure.errorCode
+        });
+        return failure;
+      }
 
-    const response = await fetch(chatUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal
-    });
+      addUsage(usage, readUsage(readRecord(payload)));
 
-    const payload = await readJsonResponse(response);
-    await logOllama(request, response.ok ? "stdout" : "stderr", "Received Ollama chat response", {
-      endpoint: chatUrl,
-      status: response.status,
-      ok: response.ok,
-      response: payload
-    });
+      const record = readRecord(payload);
+      const assistantMessage = readAssistantMessage(record);
+      const toolCalls = assistantMessage.tool_calls ?? [];
+      if (toolCalls.length === 0) {
+        const result = buildSuccessResult(request, session, payload, chatUrl, {
+          usage,
+          raw: {
+            endpoint: chatUrl,
+            responses: rawResponses,
+            toolResults,
+            finalResponse: readRecord(payload)
+          }
+        });
+        await logOllama(request, "stdout", "Parsed Ollama chat result", {
+          model: result.model,
+          usage: result.usage,
+          responseText: result.responseText ?? "",
+          sessionParams: result.session
+        });
+        return result;
+      }
 
-    if (!response.ok) {
-      const message = readOllamaError(payload)
-        ?? `Ollama chat request failed with HTTP ${response.status}`;
+      if (!request.commandExecution?.enabled) {
+        return buildFailureResult({
+          request,
+          session,
+          error: "Ollama requested tool calls, but command execution is disabled",
+          errorCode: "tool_calls_disabled",
+          raw: {
+            endpoint: chatUrl,
+            responses: rawResponses,
+            toolCalls
+          }
+        });
+      }
 
-      const failure = buildFailureResult({
-        request,
-        session,
-        error: message,
-        errorCode: "ollama_http_error",
-        raw: {
-          endpoint: chatUrl,
-          status: response.status,
-          response: payload
-        }
-      });
-      await logOllama(request, "stderr", "Ollama chat request failed", {
-        error: failure.error,
-        errorCode: failure.errorCode
-      });
-      return failure;
+      if (executedToolCalls + toolCalls.length > request.commandExecution.maxToolCalls) {
+        const failure = buildFailureResult({
+          request,
+          session,
+          error: `Exceeded maxToolCalls (${request.commandExecution.maxToolCalls})`,
+          errorCode: "max_tool_calls_exceeded",
+          raw: {
+            endpoint: chatUrl,
+            responses: rawResponses,
+            toolResults,
+            requestedToolCalls: toolCalls
+          }
+        });
+        await logOllama(request, "stderr", "Ollama tool loop stopped", {
+          error: failure.error,
+          errorCode: failure.errorCode
+        });
+        return failure;
+      }
+
+      messages.push(assistantMessage);
+      for (const toolCall of toolCalls) {
+        const toolResult = await executeToolCall(request, toolCall);
+        executedToolCalls += 1;
+        toolResults.push(toolResult);
+        messages.push({
+          role: "tool",
+          tool_name: RUN_COMMAND_TOOL_NAME,
+          content: JSON.stringify(toolResult)
+        });
+      }
     }
 
-    const result = buildSuccessResult(request, session, payload, chatUrl);
-    await logOllama(request, "stdout", "Parsed Ollama chat result", {
-      model: result.model,
-      usage: result.usage,
-      responseText: result.responseText ?? "",
-      sessionParams: result.session
+    const failure = buildFailureResult({
+      request,
+      session,
+      error: `Exceeded maxToolCalls (${request.commandExecution?.maxToolCalls ?? 0})`,
+      errorCode: "max_tool_calls_exceeded",
+      raw: {
+        endpoint: chatUrl,
+        responses: rawResponses,
+        toolResults
+      }
     });
-    return result;
+    await logOllama(request, "stderr", "Ollama tool loop stopped", {
+      error: failure.error,
+      errorCode: failure.errorCode
+    });
+    return failure;
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {
       const failure = buildFailureResult({
@@ -117,20 +224,57 @@ export async function invokeOllama(
 }
 
 export function buildOllamaChatRequestBody(
-  request: OllamaInvocationRequest
+  request: OllamaInvocationRequest,
+  messages = buildInitialMessages(request)
 ): OllamaChatRequestBody {
   return {
     model: request.model,
-    messages: [
-      ...(request.instructions
-        ? [{ role: "system" as const, content: request.instructions }]
-        : []),
-      { role: "user", content: request.prompt }
-    ],
+    messages,
     stream: false,
-    ...(request.think !== undefined ? { think: request.think } : {})
+    ...(request.think !== undefined ? { think: request.think } : {}),
+    ...(request.commandExecution?.enabled ? { tools: [runCommandTool] } : {})
   };
 }
+
+function buildInitialMessages(request: OllamaInvocationRequest): OllamaChatMessage[] {
+  return [
+    ...(request.instructions
+      ? [{ role: "system" as const, content: request.instructions }]
+      : []),
+    { role: "user", content: request.prompt }
+  ];
+}
+
+const runCommandTool: OllamaToolDefinition = {
+  type: "function",
+  function: {
+    name: RUN_COMMAND_TOOL_NAME,
+    description: "Run a trusted local command directly, without shell evaluation. Use command plus args.",
+    parameters: {
+      type: "object",
+      required: ["command"],
+      properties: {
+        command: {
+          type: "string",
+          description: "Executable name or path, for example npm, node, git, or ./scripts/test.sh"
+        },
+        args: {
+          type: "array",
+          description: "Command arguments as separate strings. Do not include shell operators.",
+          items: { type: "string" }
+        },
+        cwd: {
+          type: "string",
+          description: "Optional absolute working directory. Defaults to adapter commandCwd."
+        },
+        stdin: {
+          type: "string",
+          description: "Optional stdin content to send to the process."
+        }
+      }
+    }
+  }
+};
 
 async function readJsonResponse(response: Response): Promise<unknown> {
   const text = await response.text();
@@ -149,11 +293,15 @@ function buildSuccessResult(
   request: OllamaInvocationRequest,
   session: ReturnType<typeof createPlaceholderSession>,
   payload: unknown,
-  endpoint: string
+  endpoint: string,
+  overrides?: {
+    usage?: OllamaInvocationResult["usage"];
+    raw?: Record<string, unknown>;
+  }
 ): OllamaInvocationResult {
   const record = readRecord(payload);
   const responseText = readMessageContent(record);
-  const usage = readUsage(record);
+  const usage = overrides?.usage ?? readUsage(record);
   const updatedSession = {
     ...session,
     model: request.model,
@@ -174,7 +322,7 @@ function buildSuccessResult(
     usage,
     costUsd: 0,
     session: updatedSession,
-    raw: readRecord(payload)
+    raw: overrides?.raw ?? readRecord(payload)
   };
 }
 
@@ -229,6 +377,63 @@ function readUsage(record: Record<string, unknown>): OllamaInvocationResult["usa
     outputTokens,
     totalTokens: inputTokens + outputTokens
   };
+}
+
+function addUsage(
+  total: { inputTokens: number; outputTokens: number; totalTokens: number },
+  next: OllamaInvocationResult["usage"]
+): void {
+  total.inputTokens += next.inputTokens;
+  total.outputTokens += next.outputTokens;
+  total.totalTokens += next.totalTokens ?? next.inputTokens + next.outputTokens;
+}
+
+function readAssistantMessage(record: Record<string, unknown>): OllamaChatMessage {
+  const message = readRecord(record.message);
+  const content = readString(message.content) ?? "";
+  return {
+    role: "assistant",
+    content,
+    ...(Array.isArray(message.tool_calls) ? { tool_calls: message.tool_calls as OllamaToolCall[] } : {})
+  };
+}
+
+async function executeToolCall(
+  request: OllamaInvocationRequest,
+  toolCall: OllamaToolCall
+): Promise<RunCommandOutput> {
+  const name = toolCall.function?.name;
+  if (name !== RUN_COMMAND_TOOL_NAME) {
+    throw new Error(`Unsupported tool call: ${name ?? "unknown"}`);
+  }
+  if (!request.commandExecution || !request.runId || !request.onLog) {
+    throw new Error("Command execution requires runId, onLog, and commandExecution options");
+  }
+
+  const input = parseRunCommandInput(toolCall.function?.arguments);
+  await logOllama(request, "stdout", "Executing tool call", {
+    name,
+    arguments: input
+  });
+
+  const result = await runTrustedCommand(input, {
+    runId: request.runId,
+    defaultCwd: request.commandExecution.cwd,
+    timeoutSec: request.commandExecution.timeoutSec,
+    onLog: request.onLog,
+    ...(request.onSpawn ? { onSpawn: request.onSpawn } : {})
+  });
+
+  await logOllama(request, "stdout", "Tool call completed", {
+    command: result.command,
+    args: result.args,
+    cwd: result.cwd,
+    exitCode: result.exitCode,
+    signal: result.signal,
+    timedOut: result.timedOut
+  });
+
+  return result;
 }
 
 function summarizeResponse(responseText: string): string {
