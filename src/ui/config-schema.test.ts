@@ -14,6 +14,7 @@ describe("getConfigSchema", () => {
     expect(schema.fields.map((field) => field.key)).toEqual([
       "baseUrl",
       "logging",
+      "think",
       "enableCommandExecution",
       "commandCwd",
       "commandTimeoutSec",
@@ -31,6 +32,17 @@ describe("getConfigSchema", () => {
       type: "select",
       default: "false"
     });
+    expect(schema.fields.find((field) => field.key === "think")).toMatchObject({
+      type: "select",
+      default: "",
+      options: [
+        { label: "Auto", value: "" },
+        { label: "Off", value: "false" },
+        { label: "Low", value: "low" },
+        { label: "Medium", value: "medium" },
+        { label: "High", value: "high" }
+      ]
+    });
   });
 
   it("defaults baseUrl from OLLAMA_BASE_URL when present", () => {
@@ -44,8 +56,8 @@ describe("getConfigSchema", () => {
     expect(getConfigSchema().fields.some((field) => field.key === "model")).toBe(false);
   });
 
-  it("does not define think because Paperclip renders the built-in thinking effort control", () => {
-    expect(getConfigSchema().fields.some((field) => field.key === "think")).toBe(false);
+  it("defines a custom think field so users can set Off", () => {
+    expect(getConfigSchema().fields.some((field) => field.key === "think")).toBe(true);
   });
 
   it("does not define timeoutSec because Paperclip renders the built-in timeout control", () => {
@@ -98,5 +110,14 @@ describe("buildConfigFromFormValues", () => {
       model: "llama3.2",
       think: ""
     })).not.toHaveProperty("think");
+  });
+
+  it("maps Off to think=false", () => {
+    expect(buildConfigFromFormValues({
+      model: "llama3.2",
+      think: "false"
+    })).toMatchObject({
+      think: false
+    });
   });
 });

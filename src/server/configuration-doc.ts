@@ -14,11 +14,12 @@ Core fields:
 - \`baseUrl\` (string, optional): Ollama server root. Defaults to \`OLLAMA_BASE_URL\` when set, otherwise \`http://127.0.0.1:11434\`.
 - \`timeoutSec\` (number, optional): Paperclip's built-in timeout control. The adapter uses this as the Ollama request timeout in seconds. Defaults to \`120\`.
 - \`logging\` (boolean, optional): Enables detailed Paperclip logs for prompt rendering, Ollama chat request bodies, raw Ollama replies, parsed results, and failures. Defaults to \`false\`.
+- \`think\` (false | "low" | "medium" | "high", optional): Adapter-specific thinking control. Use \`false\` to disable thinking. When set, this overrides Paperclip's built-in \`thinkingEffort\` value.
 - \`enableCommandExecution\` (boolean, optional): Enables trusted local \`run_command\` tool calls from Ollama. Defaults to \`false\`.
 - \`commandCwd\` (string, optional): Absolute working directory for model-requested commands. Defaults to Paperclip's working directory when provided, otherwise the adapter process directory.
 - \`commandTimeoutSec\` (number, optional): Maximum seconds each model-requested command may run. Defaults to \`120\`.
 - \`maxToolCalls\` (number, optional): Maximum number of command tool calls in one run. Defaults to \`8\`.
-- \`thinkingEffort\` or \`think\` (true | false | "low" | "medium" | "high", optional): Ollama thinking control. Paperclip's built-in Thinking Effort field is preferred and maps into Ollama's \`think\` request option.
+- \`thinkingEffort\` (true | false | "low" | "medium" | "high", optional): Fallback for Paperclip's built-in Thinking Effort field. The adapter's own \`think\` field is preferred because it exposes an explicit Off option in the UI.
 - \`instructions\` (string, optional): System instructions for the agent.
 - \`promptTemplate\` (string, optional): Prompt template for Paperclip wake context.
 

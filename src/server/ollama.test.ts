@@ -148,6 +148,44 @@ describe("invokeOllama", () => {
     });
   });
 
+  it("rotates sessionId and session model when the configured model changes", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+      model: "gemma4:31b",
+      created_at: "2026-04-21T10:10:00Z",
+      message: {
+        role: "assistant",
+        content: "Switched models."
+      },
+      done: true,
+      prompt_eval_count: 4,
+      eval_count: 5
+    })));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await invokeOllama({
+      baseUrl: "http://ollama.local:11434",
+      model: "gemma4:31b",
+      prompt: "Continue.",
+      timeoutMs: 120_000,
+      session: {
+        sessionId: "ollama:llama3.2:2026-04-21T10:00:00.000Z",
+        model: "llama3.2",
+        createdAt: "2026-04-21T10:00:00.000Z",
+        updatedAt: "2026-04-21T10:05:00.000Z",
+        metadata: {
+          endpoint: "http://ollama.local:11434/api/chat",
+          lastCreatedAt: "2026-04-21T10:05:00Z",
+          doneReason: "stop"
+        }
+      }
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.session?.model).toBe("gemma4:31b");
+    expect(result.session?.sessionId).toContain("ollama:gemma4:31b:");
+    expect(result.session?.sessionId).not.toBe("ollama:llama3.2:2026-04-21T10:00:00.000Z");
+  });
+
   it("logs chat request and reply details when logging is enabled", async () => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({
       model: "llama3.2",

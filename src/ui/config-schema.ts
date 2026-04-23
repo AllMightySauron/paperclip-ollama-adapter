@@ -4,8 +4,9 @@ import { readDefaultBaseUrl } from "../base-url.js";
 /**
  * Custom adapter UI fields.
  *
- * Paperclip owns built-in controls such as model, timeout, and thinking effort,
- * so those fields are intentionally not duplicated here.
+ * Paperclip owns built-in controls such as model and timeout. This adapter
+ * intentionally defines its own thinking selector so users can choose `Off`,
+ * which the current Paperclip built-in control does not expose.
  */
 export const ollamaConfigSchema: AdapterConfigSchema = {
   fields: [
@@ -25,6 +26,20 @@ export const ollamaConfigSchema: AdapterConfigSchema = {
       options: [
         { label: "Disabled", value: "false" },
         { label: "Enabled", value: "true" }
+      ]
+    },
+    {
+      key: "think",
+      label: "Thinking",
+      type: "select",
+      default: "",
+      hint: "Adapter-specific thinking control. Use Off to send think=false to Ollama. This value overrides Paperclip's built-in Thinking Effort field when set.",
+      options: [
+        { label: "Auto", value: "" },
+        { label: "Off", value: "false" },
+        { label: "Low", value: "low" },
+        { label: "Medium", value: "medium" },
+        { label: "High", value: "high" }
       ]
     },
     {

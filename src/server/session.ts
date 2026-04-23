@@ -63,6 +63,25 @@ export function createPlaceholderSession(model: string): OllamaSessionParams {
   };
 }
 
+/**
+ * Reuses a persisted session only while it matches the current model.
+ *
+ * Ollama itself is stateless in this adapter, so the session id is only an
+ * adapter-side continuity marker. If the configured model changes, rotate the
+ * session immediately so Paperclip does not keep showing stale model/session
+ * information from a previous configuration.
+ */
+export function initializeSession(
+  model: string,
+  session: OllamaSessionParams | null
+): OllamaSessionParams {
+  if (!session || session.model !== model) {
+    return createPlaceholderSession(model);
+  }
+
+  return session;
+}
+
 function readMetadata(value: unknown): OllamaSessionMetadata {
   if (typeof value !== "object" || value === null) {
     return {};

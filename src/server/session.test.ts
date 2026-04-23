@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSession, sessionCodec } from "./session.js";
+import { initializeSession, parseSession, sessionCodec } from "./session.js";
 
 describe("session persistence", () => {
   it("keeps only lightweight adapter continuity metadata", () => {
@@ -44,5 +44,21 @@ describe("session persistence", () => {
       lastCreatedAt: null,
       doneReason: null
     });
+  });
+
+  it("rotates the adapter session when the model changes", () => {
+    const session = initializeSession("gemma4:31b", {
+      sessionId: "ollama:llama3.2:2026-04-21T10:00:00.000Z",
+      model: "llama3.2",
+      createdAt: "2026-04-21T10:00:00.000Z",
+      updatedAt: "2026-04-21T10:05:00.000Z",
+      metadata: {
+        endpoint: "http://127.0.0.1:11434/api/chat"
+      }
+    });
+
+    expect(session.model).toBe("gemma4:31b");
+    expect(session.sessionId).toContain("ollama:gemma4:31b:");
+    expect(session.metadata).toEqual({});
   });
 });

@@ -51,7 +51,8 @@ When creating or editing an agent, select **Local Ollama** as the adapter type a
 | `commandCwd` | No | Absolute working directory for model-requested commands. Defaults to Paperclip's working directory when provided, otherwise the adapter process directory. |
 | `commandTimeoutSec` | No | Maximum seconds each model-requested command may run (default: 120). |
 | `maxToolCalls` | No | Maximum number of command tool calls allowed in one run (default: 8). |
-| `thinkingEffort` | No | Paperclip's built-in thinking effort control. The adapter maps `low`, `medium`, `high`, `true`, or `false` into Ollama's `think` request option. |
+| `think` | No | Adapter-specific thinking control. Use `Off` to send `think=false` to Ollama. When set, this overrides Paperclip's built-in `thinkingEffort` value. |
+| `thinkingEffort` | No | Paperclip's built-in thinking effort control. Still supported as a fallback, but the adapter's own `Thinking` field is preferred because it exposes `Off`. |
 | `instructions` | No | System prompt: the agent's role, persona, and rules |
 | `promptTemplate` | No | Template used to turn Paperclip wake context into the Ollama prompt |
 

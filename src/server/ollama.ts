@@ -11,7 +11,7 @@ import {
   runTrustedCommand,
   type RunCommandOutput
 } from "./commands.js";
-import { createPlaceholderSession } from "./session.js";
+import { createPlaceholderSession, initializeSession } from "./session.js";
 
 export const OLLAMA_CHAT_PATH = "/api/chat";
 const RUN_COMMAND_TOOL_NAME = "run_command";
@@ -28,7 +28,7 @@ const RUN_COMMAND_TOOL_NAME = "run_command";
 export async function invokeOllama(
   request: OllamaInvocationRequest
 ): Promise<OllamaInvocationResult> {
-  const session = request.session ?? createPlaceholderSession(request.model);
+  const session = initializeSession(request.model, request.session);
   const chatUrl = buildOllamaApiUrl(request.baseUrl, OLLAMA_CHAT_PATH);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), request.timeoutMs);
