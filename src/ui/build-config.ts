@@ -1,10 +1,10 @@
 import {
-  DEFAULT_BASE_URL,
   DEFAULT_TIMEOUT_SEC,
   OLLAMA_THINK_LEVELS,
   type OllamaAdapterConfig,
   type OllamaThinking
 } from "../types.js";
+import { readDefaultBaseUrl } from "../base-url.js";
 
 export type OllamaConfigFormValues = Partial<{
   model: string;
@@ -27,7 +27,7 @@ export function buildConfigFromFormValues(
   // extension points are finalized.
   const config: Partial<OllamaAdapterConfig> = {
     model: values.model?.trim() ?? "",
-    baseUrl: values.baseUrl?.trim() || DEFAULT_BASE_URL,
+    baseUrl: values.baseUrl?.trim() || readDefaultBaseUrl(),
     timeoutSec: Number(values.timeoutSec ?? DEFAULT_TIMEOUT_SEC)
   };
 

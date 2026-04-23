@@ -1,8 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_BASE_URL, DEFAULT_TIMEOUT_SEC } from "../types.js";
 import { parseConfig } from "./config.js";
 
 describe("parseConfig", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("requires a model", () => {
     const result = parseConfig({});
 
@@ -19,6 +23,27 @@ describe("parseConfig", () => {
       baseUrl: DEFAULT_BASE_URL,
       timeoutSec: DEFAULT_TIMEOUT_SEC
     });
+  });
+
+  it("defaults baseUrl from OLLAMA_BASE_URL when present", () => {
+    vi.stubEnv("OLLAMA_BASE_URL", "http://ollama:11434/");
+
+    const result = parseConfig({ model: "llama3.2" });
+
+    expect(result.errors).toEqual([]);
+    expect(result.config?.baseUrl).toBe("http://ollama:11434");
+  });
+
+  it("prefers explicit baseUrl over OLLAMA_BASE_URL", () => {
+    vi.stubEnv("OLLAMA_BASE_URL", "http://ollama:11434");
+
+    const result = parseConfig({
+      model: "llama3.2",
+      baseUrl: "http://custom-ollama:11434"
+    });
+
+    expect(result.errors).toEqual([]);
+    expect(result.config?.baseUrl).toBe("http://custom-ollama:11434");
   });
 
   it.each([

@@ -1,6 +1,7 @@
 import type { ServerAdapterModule } from "@paperclipai/adapter-utils";
+import { readDefaultBaseUrl } from "../base-url.js";
 import { fallbackModels, toAdapterModels } from "../models.js";
-import { ADAPTER_TYPE, DEFAULT_BASE_URL } from "../types.js";
+import { ADAPTER_TYPE } from "../types.js";
 import { getConfigSchema } from "../ui/config-schema.js";
 import { agentConfigurationDoc } from "./configuration-doc.js";
 import { execute } from "./execute.js";
@@ -55,5 +56,5 @@ export { testEnvironment } from "./test.js";
 export { sessionCodec } from "./session.js";
 
 function readModelDiscoveryBaseUrl(): string {
-  return process.env.OLLAMA_BASE_URL?.trim() || DEFAULT_BASE_URL;
+  return readDefaultBaseUrl();
 }

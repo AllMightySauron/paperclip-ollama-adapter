@@ -1,9 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_BASE_URL } from "../types.js";
 import { buildConfigFromFormValues } from "./build-config.js";
 import { getConfigSchema } from "./config-schema.js";
 
 describe("getConfigSchema", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("exposes Paperclip UI fields for all adapter config keys", () => {
     const schema = getConfigSchema();
 
@@ -29,6 +33,13 @@ describe("getConfigSchema", () => {
     });
   });
 
+  it("defaults baseUrl from OLLAMA_BASE_URL when present", () => {
+    vi.stubEnv("OLLAMA_BASE_URL", "http://ollama:11434");
+
+    expect(getConfigSchema().fields.find((field) => field.key === "baseUrl")?.default)
+      .toBe("http://ollama:11434");
+  });
+
   it("does not define model because Paperclip renders the built-in model control", () => {
     expect(getConfigSchema().fields.some((field) => field.key === "model")).toBe(false);
   });
@@ -43,6 +54,10 @@ describe("getConfigSchema", () => {
 });
 
 describe("buildConfigFromFormValues", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("normalizes schema values into adapter config", () => {
     expect(buildConfigFromFormValues({
       model: " llama3.2 ",
@@ -64,6 +79,17 @@ describe("buildConfigFromFormValues", () => {
       commandTimeoutSec: 20,
       maxToolCalls: 4,
       think: "medium"
+    });
+  });
+
+  it("defaults empty form baseUrl from OLLAMA_BASE_URL when present", () => {
+    vi.stubEnv("OLLAMA_BASE_URL", "http://ollama:11434");
+
+    expect(buildConfigFromFormValues({
+      model: "llama3.2",
+      baseUrl: ""
+    })).toMatchObject({
+      baseUrl: "http://ollama:11434"
     });
   });
 

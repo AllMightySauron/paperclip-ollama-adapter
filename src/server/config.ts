@@ -1,5 +1,4 @@
 import {
-  DEFAULT_BASE_URL,
   DEFAULT_COMMAND_TIMEOUT_SEC,
   DEFAULT_MAX_TOOL_CALLS,
   DEFAULT_TIMEOUT_SEC,
@@ -7,6 +6,7 @@ import {
   type OllamaAdapterConfig,
   type OllamaThinking
 } from "../types.js";
+import { readDefaultBaseUrl } from "../base-url.js";
 
 export interface ConfigParseResult {
   config: OllamaAdapterConfig | null;
@@ -25,7 +25,7 @@ export function parseConfig(raw: Record<string, unknown>): ConfigParseResult {
   const errors: string[] = [];
   const schemaValues = readRecord(raw.adapterSchemaValues);
   const model = readString(readConfigValue(raw, schemaValues, "model"))?.trim();
-  const baseUrl = readString(readConfigValue(raw, schemaValues, "baseUrl"))?.trim() || DEFAULT_BASE_URL;
+  const baseUrl = readString(readConfigValue(raw, schemaValues, "baseUrl"))?.trim() || readDefaultBaseUrl();
   const timeoutSec = readNumber(readConfigValue(raw, schemaValues, "timeoutSec"), DEFAULT_TIMEOUT_SEC);
   const logging = readBoolean(readConfigValue(raw, schemaValues, "logging"));
   const enableCommandExecution = readBoolean(readConfigValue(raw, schemaValues, "enableCommandExecution")) ?? false;

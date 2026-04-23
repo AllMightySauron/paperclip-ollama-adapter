@@ -1,5 +1,5 @@
 import type { AdapterConfigSchema } from "@paperclipai/adapter-utils";
-import { DEFAULT_BASE_URL } from "../types.js";
+import { readDefaultBaseUrl } from "../base-url.js";
 
 /**
  * Custom adapter UI fields.
@@ -13,8 +13,8 @@ export const ollamaConfigSchema: AdapterConfigSchema = {
       key: "baseUrl",
       label: "Base URL",
       type: "text",
-      default: DEFAULT_BASE_URL,
-      hint: "Ollama server root. The adapter calls /api/chat and /api/tags below this URL."
+      default: readDefaultBaseUrl(),
+      hint: "Ollama server root. Defaults to OLLAMA_BASE_URL when set, otherwise http://127.0.0.1:11434. The adapter calls /api/chat and /api/tags below this URL."
     },
     {
       key: "logging",
@@ -75,5 +75,16 @@ export const ollamaConfigSchema: AdapterConfigSchema = {
 
 /** Exposes the UI schema through the server adapter module. */
 export function getConfigSchema(): AdapterConfigSchema {
-  return ollamaConfigSchema;
+  return {
+    fields: ollamaConfigSchema.fields.map((field) => {
+      if (field.key !== "baseUrl") {
+        return field;
+      }
+
+      return {
+        ...field,
+        default: readDefaultBaseUrl()
+      };
+    })
+  };
 }

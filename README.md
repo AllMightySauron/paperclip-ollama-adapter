@@ -44,7 +44,7 @@ When creating or editing an agent, select **Local Ollama** as the adapter type a
 | Field | Required | Description |
 |---|---|---|
 | `model` | Yes | Model ID from Paperclip's built-in model selector. Free-form Ollama names may be entered if the UI allows custom model values. |
-| `baseUrl` | No | API endpoint root (default: http://127.0.0.1:11434) |
+| `baseUrl` | No | API endpoint root. Defaults to `OLLAMA_BASE_URL` when set, otherwise `http://127.0.0.1:11434`. |
 | `timeoutSec` | No | Paperclip's built-in timeout control. The adapter uses this as the Ollama request timeout in seconds. |
 | `logging` | No | Enables detailed logs for prompt rendering, Ollama `/api/chat` request bodies, raw replies, parsed results, and errors. Defaults to `false`; logs may include sensitive prompt/context data. |
 | `enableCommandExecution` | No | Enables trusted local command execution through Ollama tool calls. Defaults to `false`. |
