@@ -42,7 +42,7 @@ describe("buildOllamaChatRequestBody", () => {
     });
   });
 
-  it("describes run_command with direct executable-plus-args examples", () => {
+  it("describes run_command with direct args and shell support", () => {
     const body = buildOllamaChatRequestBody({
       baseUrl: "http://127.0.0.1:11434",
       model: "llama3.2",
@@ -58,8 +58,9 @@ describe("buildOllamaChatRequestBody", () => {
     });
 
     const toolJson = JSON.stringify(body.tools?.[0]);
-    expect(toolJson).toContain("Run one trusted local executable");
-    expect(toolJson).toContain("Executable name or path only");
+    expect(toolJson).toContain("Run a trusted local command");
+    expect(toolJson).toContain("use sh -lc for shell syntax");
+    expect(toolJson).toContain("Executable name or path");
     expect(toolJson).toContain("Arguments as separate strings");
   });
 });

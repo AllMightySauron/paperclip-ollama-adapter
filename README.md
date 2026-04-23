@@ -97,7 +97,24 @@ When `enableCommandExecution` is enabled, the adapter exposes a trusted local `r
 }
 ```
 
-Commands are run with Paperclip's child process helper, so stdout and stderr stream into the run logs. This intentionally does not evaluate shell strings; shell operators such as `&&`, pipes, redirects, and command substitution are not interpreted unless you explicitly run a shell executable yourself, for example `sh` with `["-lc", "..."]`.
+Commands are run with Paperclip's child process helper, so stdout and stderr stream into the run logs. Direct executable-plus-args form is preferred. For trusted local agents, the adapter also detects shell-only syntax such as `&&`, pipes, redirects, command substitution, and full command strings with spaces, then runs that command through `sh -lc`.
+
+For example, this model-emitted command:
+
+```json
+{
+  "command": "find /paperclip -name \"hiring_plan.md\" 2>/dev/null"
+}
+```
+
+is normalized to:
+
+```json
+{
+  "command": "sh",
+  "args": ["-lc", "find /paperclip -name \"hiring_plan.md\" 2>/dev/null"]
+}
+```
 
 Command execution requires a model that supports native Ollama tool calling and returns `message.tool_calls` from `/api/chat`. Models that emit tool calls only as plain text, XML-like `<function_calls>` blocks, or markdown snippets will not trigger command execution.
 

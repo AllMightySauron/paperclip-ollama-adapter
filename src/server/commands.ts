@@ -36,20 +36,22 @@ export interface RunCommandOutput {
 /**
  * Executes a model-requested command as a direct child process.
  *
- * This intentionally does not invoke a shell. The model must provide one
- * executable in `command` and individual arguments in `args`, which keeps the
- * adapter behavior predictable while still supporting trusted local agents.
+ * The preferred path is direct execution: one executable in `command` and its
+ * arguments in `args`. For trusted local agents, the adapter also detects
+ * shell-only syntax that models sometimes put in `command` and runs that
+ * string through `sh -lc` so redirects, pipes, and conditionals work.
  */
 export async function runTrustedCommand(
   input: RunCommandInput,
   options: RunCommandOptions
 ): Promise<RunCommandOutput> {
-  const command = input.command.trim();
+  const invocation = normalizeCommandInvocation(input);
+  const command = invocation.command;
   if (!command) {
     throw new Error("run_command requires a non-empty command");
   }
 
-  const args = normalizeArgs(input.args, command);
+  const args = invocation.args;
   const cwd = input.cwd?.trim() || options.defaultCwd;
 
   await ensureAbsoluteDirectory(cwd);
@@ -93,12 +95,61 @@ export function parseRunCommandInput(value: unknown): RunCommandInput {
     throw new Error("run_command.command must be a string");
   }
 
-  return {
+  const invocation = normalizeCommandInvocation({
     command: record.command,
-    ...(Array.isArray(record.args) ? { args: normalizeArgs(record.args, record.command) } : {}),
+    ...(Array.isArray(record.args) ? { args: record.args } : {})
+  });
+
+  return {
+    command: invocation.command,
+    ...(invocation.args.length > 0 ? { args: invocation.args } : {}),
     ...(typeof record.cwd === "string" ? { cwd: record.cwd } : {}),
     ...(typeof record.stdin === "string" ? { stdin: record.stdin } : {})
   };
+}
+
+function normalizeCommandInvocation(input: RunCommandInput): { command: string; args: string[] } {
+  const command = input.command.trim();
+  const args = normalizeArgs(input.args, command);
+
+  if (!shouldRunViaShell(command, args)) {
+    return { command, args };
+  }
+
+  return {
+    command: "sh",
+    args: ["-lc", buildShellCommand(command, args)]
+  };
+}
+
+function shouldRunViaShell(command: string, args: string[]): boolean {
+  if (isShellExecutable(command)) {
+    return false;
+  }
+
+  return containsShellSyntax(command) || args.some(containsShellSyntax);
+}
+
+function isShellExecutable(command: string): boolean {
+  return command === "sh" || command.endsWith("/sh")
+    || command === "bash" || command.endsWith("/bash");
+}
+
+function containsShellSyntax(value: string): boolean {
+  return /\s/.test(value)
+    || /(?:^|[^\w])(?:2?>|&>|>>|<|<<|\|\||&&|\||;|\$\(|`)/.test(value);
+}
+
+function buildShellCommand(command: string, args: string[]): string {
+  if (args.length === 0) {
+    return command;
+  }
+
+  return [command, ...args.map(shellQuote)].join(" ");
+}
+
+function shellQuote(value: string): string {
+  return `'${value.replaceAll("'", "'\\''")}'`;
 }
 
 function normalizeArgs(value: unknown, command: string): string[] {

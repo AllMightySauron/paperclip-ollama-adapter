@@ -44,11 +44,13 @@ Command execution is enabled through the run_command tool.
 
 Use run_command only when you need local workspace information or need to run a script.
 The "command" value must be exactly one executable. The "args" array must contain only that executable's arguments.
+If you need shell syntax such as redirects, pipes, or &&, use command="sh" and args=["-lc", "..."].
 
 Examples:
 - Read a file: command="cat", args=["path/to/file.md"]
 - List recursively: command="ls", args=["-R", "path/to/dir"]
+- Find while suppressing errors: command="sh", args=["-lc", "find /paperclip -name 'file.md' 2>/dev/null"]
 - Run tests: command="npm", args=["test"]
 
-Do not combine commands. Do not write command="npm test" or args=["ls-R"]. Use args=["-R"] instead.`;
+Do not write args=["ls-R"]. Use args=["-R"] instead.`;
 }

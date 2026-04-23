@@ -267,14 +267,14 @@ const runCommandTool: OllamaToolDefinition = {
   type: "function",
   function: {
     name: RUN_COMMAND_TOOL_NAME,
-    description: "Run one trusted local executable. Use command for the executable and args for its arguments.",
+    description: "Run a trusted local command. Prefer command plus args; use sh -lc for shell syntax.",
     parameters: {
       type: "object",
       required: ["command"],
       properties: {
         command: {
           type: "string",
-          description: "Executable name or path only, for example cat, ls, npm, node, git, or ./scripts/test.sh."
+          description: "Executable name or path, for example cat, ls, npm, node, git, sh, or ./scripts/test.sh."
         },
         args: {
           type: "array",
