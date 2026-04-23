@@ -16,7 +16,7 @@ Core fields:
 - \`logging\` (boolean, optional): Enables detailed Paperclip logs for prompt rendering, Ollama chat request bodies, raw Ollama replies, parsed results, and failures. Defaults to \`false\`.
 - \`think\` (false | "low" | "medium" | "high", optional): Adapter-specific thinking control. Use \`false\` to disable thinking. When set, this overrides Paperclip's built-in \`thinkingEffort\` value.
 - \`enableCommandExecution\` (boolean, optional): Enables trusted local \`run_command\` tool calls from Ollama. Defaults to \`false\`.
-- \`commandCwd\` (string, optional): Absolute working directory for model-requested commands. Defaults to Paperclip's working directory when provided, otherwise the adapter process directory.
+- \`commandCwd\` (string, optional): Absolute working directory for model-requested commands. Defaults to \`context.paperclipWorkspace.cwd\` from the Paperclip project workspace when available, otherwise the adapter process directory.
 - \`commandTimeoutSec\` (number, optional): Maximum seconds each model-requested command may run. Defaults to \`120\`.
 - \`maxToolCalls\` (number, optional): Maximum number of command tool calls in one run. Defaults to \`8\`.
 - \`thinkingEffort\` (true | false | "low" | "medium" | "high", optional): Fallback for Paperclip's built-in Thinking Effort field. The adapter's own \`think\` field is preferred because it exposes an explicit Off option in the UI.

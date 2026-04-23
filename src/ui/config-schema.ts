@@ -57,7 +57,7 @@ export const ollamaConfigSchema: AdapterConfigSchema = {
       key: "commandCwd",
       label: "Command Working Directory",
       type: "text",
-      hint: "Absolute directory for model-requested commands. Defaults to Paperclip's built-in working directory when provided, otherwise the adapter process directory."
+      hint: "Absolute directory for model-requested commands. Defaults to Paperclip's project workspace cwd when available, otherwise the adapter process directory."
     },
     {
       key: "commandTimeoutSec",

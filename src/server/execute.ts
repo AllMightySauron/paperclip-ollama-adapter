@@ -49,6 +49,11 @@ export async function execute(
     length: prompt.length,
     prompt
   });
+  const resolvedCommandCwd = resolveCommandCwd(ctx, config.commandCwd);
+  await logDebug(ctx, config.logging, "Resolved command working directory", {
+    source: readCommandCwdSource(ctx, config.commandCwd),
+    cwd: resolvedCommandCwd
+  });
 
   const result = await invokeOllama({
     baseUrl: config.baseUrl,
@@ -61,7 +66,7 @@ export async function execute(
     ...(ctx.onSpawn ? { onSpawn: ctx.onSpawn } : {}),
     commandExecution: {
       enabled: config.enableCommandExecution ?? false,
-      cwd: config.commandCwd ?? process.cwd(),
+      cwd: resolvedCommandCwd,
       timeoutSec: config.commandTimeoutSec,
       maxToolCalls: config.maxToolCalls
     },
@@ -91,6 +96,52 @@ export async function execute(
     sessionParams: result.session ? { ...result.session } : null,
     sessionDisplayId: result.session?.sessionId ?? null
   };
+}
+
+/**
+ * Picks the default command working directory for model-requested tools.
+ *
+ * Priority:
+ * 1. Explicit adapter `commandCwd`
+ * 2. Paperclip workspace cwd from wake context
+ * 3. Adapter process cwd as final fallback
+ */
+export function resolveCommandCwd(
+  ctx: AdapterExecutionContext,
+  configuredCommandCwd?: string
+): string {
+  if (configuredCommandCwd) {
+    return configuredCommandCwd;
+  }
+
+  const workspace = ctx.context.paperclipWorkspace;
+  if (typeof workspace === "object" && workspace !== null) {
+    const cwd = (workspace as Record<string, unknown>).cwd;
+    if (typeof cwd === "string" && cwd.trim() !== "") {
+      return cwd;
+    }
+  }
+
+  return process.cwd();
+}
+
+function readCommandCwdSource(
+  ctx: AdapterExecutionContext,
+  configuredCommandCwd?: string
+): "adapterConfig.commandCwd" | "context.paperclipWorkspace.cwd" | "process.cwd" {
+  if (configuredCommandCwd) {
+    return "adapterConfig.commandCwd";
+  }
+
+  const workspace = ctx.context.paperclipWorkspace;
+  if (typeof workspace === "object" && workspace !== null) {
+    const cwd = (workspace as Record<string, unknown>).cwd;
+    if (typeof cwd === "string" && cwd.trim() !== "") {
+      return "context.paperclipWorkspace.cwd";
+    }
+  }
+
+  return "process.cwd";
 }
 
 /** Emits structured debug logs only when the adapter logging toggle is enabled. */

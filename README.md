@@ -48,7 +48,7 @@ When creating or editing an agent, select **Local Ollama** as the adapter type a
 | `timeoutSec` | No | Paperclip's built-in timeout control. The adapter uses this as the Ollama request timeout in seconds. |
 | `logging` | No | Enables detailed logs for prompt rendering, Ollama `/api/chat` request bodies, raw replies, parsed results, and errors. Defaults to `false`; logs may include sensitive prompt/context data. |
 | `enableCommandExecution` | No | Enables trusted local command execution through Ollama tool calls. Defaults to `false`. |
-| `commandCwd` | No | Absolute working directory for model-requested commands. Defaults to Paperclip's working directory when provided, otherwise the adapter process directory. |
+| `commandCwd` | No | Absolute working directory for model-requested commands. Defaults to `context.paperclipWorkspace.cwd` from the Paperclip project workspace when available, otherwise the adapter process directory. |
 | `commandTimeoutSec` | No | Maximum seconds each model-requested command may run (default: 120). |
 | `maxToolCalls` | No | Maximum number of command tool calls allowed in one run (default: 8). |
 | `think` | No | Adapter-specific thinking control. Use `Off` to send `think=false` to Ollama. When set, this overrides Paperclip's built-in `thinkingEffort` value. |
