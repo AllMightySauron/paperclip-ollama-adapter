@@ -2,6 +2,13 @@ export const agentConfigurationDoc = `# Local Ollama configuration
 
 Adapter type: \`ollama_local\`
 
+Model dropdown:
+- The dropdown is populated by the adapter's \`listModels()\` hook.
+- \`Test environment\` queries \`GET /api/tags\` with the configured \`baseUrl\` and stores the latest successful result in process memory.
+- \`listModels()\` returns that cached result first. Without a cache, it queries \`GET /api/tags\` using \`OLLAMA_BASE_URL\` when set, otherwise \`http://127.0.0.1:11434\`.
+- If live discovery fails, the adapter returns a fallback list so the UI can still render.
+- Paperclip's current \`listModels()\` hook does not pass the per-agent \`baseUrl\` config value, so the cache is process-local and last-writer-wins.
+
 Core fields:
 - \`model\` (string, required): Ollama model name, for example \`llama3.2\` or \`qwen2.5-coder\`.
 - \`baseUrl\` (string, optional): Ollama server root. Defaults to \`http://127.0.0.1:11434\`.

@@ -2,8 +2,6 @@
 
 A [Paperclip](https://github.com/paperclipai/paperclip) adapter that connects agents to a local Ollama server.
 
-This repository is currently a TypeScript scaffold. It implements the adapter shape described in Paperclip's adapter guide and leaves the major runtime behavior as explicit TODO placeholders.
-
 ## Installation
 
 Install via Paperclip's **Adapter Plugin Manager** (Settings > Adapters > External):
@@ -56,6 +54,10 @@ When creating or editing an agent, select **Local Ollama** as the adapter type a
 | `thinkingEffort` | No | Paperclip's built-in thinking effort control. The adapter maps `low`, `medium`, `high`, `true`, or `false` into Ollama's `think` request option. |
 | `instructions` | No | System prompt: the agent's role, persona, and rules |
 | `promptTemplate` | No | Template used to turn Paperclip wake context into the Ollama prompt |
+
+Note: The model dropdown on the UI comes from the adapter's `listModels()` hook. The adapter tries to populate it from `GET /api/tags` using the last successful **Test environment** result first, then `OLLAMA_BASE_URL` when set, otherwise `http://127.0.0.1:11434`. If discovery fails, Paperclip still receives a small fallback list so the configuration screen can load.
+
+Paperclip's current adapter hook does not pass the agent's `baseUrl` field into `listModels()`, so the adapter stores the most recent successful `/api/tags` result in process memory when **Test environment** runs. This is process-local and last-writer-wins; restart the Paperclip process or rerun **Test environment** after changing Ollama servers.
 
 Example:
 

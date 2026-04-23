@@ -1,23 +1,23 @@
 import type { ServerAdapterModule } from "@paperclipai/adapter-utils";
-import { ADAPTER_TYPE } from "../types.js";
+import { fallbackModels, toAdapterModels } from "../models.js";
+import { ADAPTER_TYPE, DEFAULT_BASE_URL } from "../types.js";
 import { getConfigSchema } from "../ui/config-schema.js";
 import { agentConfigurationDoc } from "./configuration-doc.js";
 import { execute } from "./execute.js";
+import { cacheDiscoveredModels, getCachedModels } from "./model-cache.js";
+import { listOllamaModels } from "./ollama.js";
 import { sessionCodec } from "./session.js";
 import { testEnvironment } from "./test.js";
-
-const models = [
-  { id: "llama3.2", label: "Llama 3.2" },
-  { id: "qwen2.5-coder", label: "Qwen 2.5 Coder" },
-  { id: "deepseek-r1", label: "DeepSeek R1" }
-];
 
 /**
  * Static server adapter definition consumed by Paperclip.
  *
- * `listModels` remains static because Paperclip currently calls it without an
- * adapter config object. Configured `/api/tags` discovery is handled by the
- * environment test path where the selected `baseUrl` is available.
+ * Paperclip's current `listModels` hook does not receive adapter config, so it
+ * cannot read the UI's `baseUrl` field directly. The environment test can use
+ * that configured URL, so it stores successful `/api/tags` results in a
+ * process-local cache. The dropdown uses that cache first, then tries live
+ * discovery against `OLLAMA_BASE_URL` or the local default, then falls back to a
+ * safe static list if discovery is unavailable.
  */
 export const ollamaAdapter: ServerAdapterModule = {
   type: ADAPTER_TYPE,
@@ -25,9 +25,21 @@ export const ollamaAdapter: ServerAdapterModule = {
   testEnvironment,
   sessionCodec,
   supportsLocalAgentJwt: true,
-  models,
+  models: fallbackModels,
   async listModels() {
-    return models;
+    const cached = getCachedModels();
+    if (cached) {
+      return cached.models;
+    }
+
+    try {
+      const baseUrl = readModelDiscoveryBaseUrl();
+      const modelIds = await listOllamaModels(baseUrl);
+      cacheDiscoveredModels(baseUrl, modelIds);
+      return modelIds.length > 0 ? toAdapterModels(modelIds) : fallbackModels;
+    } catch {
+      return fallbackModels;
+    }
   },
   getConfigSchema,
   agentConfigurationDoc
@@ -41,3 +53,7 @@ export function createServerAdapter(): ServerAdapterModule {
 export { execute } from "./execute.js";
 export { testEnvironment } from "./test.js";
 export { sessionCodec } from "./session.js";
+
+function readModelDiscoveryBaseUrl(): string {
+  return process.env.OLLAMA_BASE_URL?.trim() || DEFAULT_BASE_URL;
+}

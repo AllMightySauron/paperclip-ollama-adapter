@@ -4,6 +4,7 @@ import type {
 } from "@paperclipai/adapter-utils";
 import { ADAPTER_TYPE } from "../types.js";
 import { parseConfig } from "./config.js";
+import { cacheDiscoveredModels } from "./model-cache.js";
 import { listOllamaModels } from "./ollama.js";
 
 export async function testEnvironment(
@@ -29,6 +30,7 @@ export async function testEnvironment(
 
     try {
       const models = await listOllamaModels(config.baseUrl);
+      cacheDiscoveredModels(config.baseUrl, models);
       checks.push({
         code: "models_discovered",
         level: models.length > 0 ? "info" as const : "warn" as const,
