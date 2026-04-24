@@ -137,6 +137,11 @@ export interface OllamaInvocationResult {
     outputTokens: number;
     totalTokens?: number;
   };
+  generation: {
+    outputTokens: number;
+    evalDurationMs: number | null;
+    tokensPerSecond: number | null;
+  };
   costUsd: number | null;
   session: OllamaSessionParams | null;
   raw: Record<string, unknown>;

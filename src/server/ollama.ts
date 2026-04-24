@@ -41,6 +41,10 @@ export async function invokeOllama(
     outputTokens: 0,
     totalTokens: 0
   };
+  const generation = {
+    outputTokens: 0,
+    evalDurationNs: 0
+  };
 
   try {
     const maxTurns = request.commandExecution?.enabled
@@ -106,24 +110,30 @@ export async function invokeOllama(
         return failure;
       }
 
-      addUsage(usage, readUsage(readRecord(payload)));
-
       const record = readRecord(payload);
+      addUsage(usage, readUsage(record));
+      addGeneration(generation, readGeneration(record));
+
       const assistantMessage = readAssistantMessage(record);
       const toolCalls = assistantMessage.tool_calls ?? [];
       if (toolCalls.length === 0) {
+        const generationStats = finalizeGeneration(generation);
         const result = buildSuccessResult(request, session, payload, chatUrl, {
           usage,
+          generation: generationStats,
           raw: {
             endpoint: chatUrl,
             responses: rawResponses,
             toolResults,
-            finalResponse: readRecord(payload)
+            finalResponse: record,
+            generation: generationStats
           }
         });
+        await logGenerationSpeed(request, generationStats);
         await logOllama(request, "stdout", "Parsed Ollama chat result", {
           model: result.model,
           usage: result.usage,
+          generation: result.generation,
           responseText: result.responseText ?? "",
           sessionParams: result.session
         });
@@ -316,12 +326,14 @@ function buildSuccessResult(
   endpoint: string,
   overrides?: {
     usage?: OllamaInvocationResult["usage"];
+    generation?: OllamaInvocationResult["generation"];
     raw?: Record<string, unknown>;
   }
 ): OllamaInvocationResult {
   const record = readRecord(payload);
   const responseText = readMessageContent(record);
   const usage = overrides?.usage ?? readUsage(record);
+  const generation = overrides?.generation ?? finalizeGeneration(readGeneration(record));
   const updatedSession = {
     ...session,
     model: request.model,
@@ -340,6 +352,7 @@ function buildSuccessResult(
     model: readString(record.model) ?? request.model,
     responseText,
     usage,
+    generation,
     costUsd: 0,
     session: updatedSession,
     raw: overrides?.raw ?? readRecord(payload)
@@ -365,6 +378,11 @@ function buildFailureResult(args: {
     usage: {
       inputTokens: 0,
       outputTokens: 0
+    },
+    generation: {
+      outputTokens: 0,
+      evalDurationMs: null,
+      tokensPerSecond: null
     },
     costUsd: 0,
     session: {
@@ -400,6 +418,16 @@ function readUsage(record: Record<string, unknown>): OllamaInvocationResult["usa
   };
 }
 
+function readGeneration(record: Record<string, unknown>): {
+  outputTokens: number;
+  evalDurationNs: number;
+} {
+  return {
+    outputTokens: readNumber(record.eval_count) ?? 0,
+    evalDurationNs: readNumber(record.eval_duration) ?? 0
+  };
+}
+
 function addUsage(
   total: { inputTokens: number; outputTokens: number; totalTokens: number },
   next: OllamaInvocationResult["usage"]
@@ -407,6 +435,36 @@ function addUsage(
   total.inputTokens += next.inputTokens;
   total.outputTokens += next.outputTokens;
   total.totalTokens += next.totalTokens ?? next.inputTokens + next.outputTokens;
+}
+
+function addGeneration(
+  total: { outputTokens: number; evalDurationNs: number },
+  next: { outputTokens: number; evalDurationNs: number }
+): void {
+  total.outputTokens += next.outputTokens;
+  total.evalDurationNs += next.evalDurationNs;
+}
+
+function finalizeGeneration(generation: {
+  outputTokens: number;
+  evalDurationNs: number;
+}): OllamaInvocationResult["generation"] {
+  if (generation.evalDurationNs <= 0) {
+    return {
+      outputTokens: generation.outputTokens,
+      evalDurationMs: null,
+      tokensPerSecond: null
+    };
+  }
+
+  const evalDurationMs = generation.evalDurationNs / 1_000_000;
+  const tokensPerSecond = generation.outputTokens / (generation.evalDurationNs / 1_000_000_000);
+
+  return {
+    outputTokens: generation.outputTokens,
+    evalDurationMs: roundMetric(evalDurationMs),
+    tokensPerSecond: roundMetric(tokensPerSecond)
+  };
 }
 
 function readAssistantMessage(record: Record<string, unknown>): OllamaChatMessage {
@@ -417,6 +475,21 @@ function readAssistantMessage(record: Record<string, unknown>): OllamaChatMessag
     content,
     ...(Array.isArray(message.tool_calls) ? { tool_calls: message.tool_calls as OllamaToolCall[] } : {})
   };
+}
+
+async function logGenerationSpeed(
+  request: OllamaInvocationRequest,
+  generation: OllamaInvocationResult["generation"]
+): Promise<void> {
+  if (!request.onLog || generation.tokensPerSecond === null || generation.evalDurationMs === null) {
+    return;
+  }
+
+  const seconds = generation.evalDurationMs / 1000;
+  await request.onLog(
+    "stdout",
+    `[ollama] generation_speed ${generation.outputTokens} output tokens in ${seconds.toFixed(2)}s = ${generation.tokensPerSecond.toFixed(2)} tokens/s\n`
+  );
 }
 
 /** Executes one supported native tool call and returns the result as JSON data. */
@@ -479,6 +552,10 @@ function readString(value: unknown): string | null {
 
 function readNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function roundMetric(value: number): number {
+  return Math.round(value * 100) / 100;
 }
 
 async function logOllama(

@@ -80,7 +80,8 @@ describe("invokeOllama", () => {
       },
       done: true,
       prompt_eval_count: 12,
-      eval_count: 8
+      eval_count: 8,
+      eval_duration: 2_000_000_000
     })));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -115,7 +116,17 @@ describe("invokeOllama", () => {
         outputTokens: 8,
         totalTokens: 20
       },
+      generation: {
+        outputTokens: 8,
+        evalDurationMs: 2000,
+        tokensPerSecond: 4
+      },
       costUsd: 0
+    });
+    expect(result.raw.generation).toEqual({
+      outputTokens: 8,
+      evalDurationMs: 2000,
+      tokensPerSecond: 4
     });
     expect(result.session?.sessionId).toContain("ollama:llama3.2:");
     expect(result.session?.metadata).toEqual({
@@ -195,7 +206,8 @@ describe("invokeOllama", () => {
       },
       done: true,
       prompt_eval_count: 2,
-      eval_count: 3
+      eval_count: 3,
+      eval_duration: 1_500_000_000
     })));
     const logs: Array<{ stream: "stdout" | "stderr"; chunk: string }> = [];
     vi.stubGlobal("fetch", fetchMock);
@@ -217,6 +229,7 @@ describe("invokeOllama", () => {
     expect(joined).toContain("Log this prompt.");
     expect(joined).toContain("Received Ollama chat response");
     expect(joined).toContain("Logged reply.");
+    expect(joined).toContain("[ollama] generation_speed 3 output tokens in 1.50s = 2.00 tokens/s");
     expect(joined).toContain("Parsed Ollama chat result");
   });
 
@@ -242,7 +255,8 @@ describe("invokeOllama", () => {
         },
         done: true,
         prompt_eval_count: 3,
-        eval_count: 4
+        eval_count: 4,
+        eval_duration: 1_000_000_000
       })))
       .mockResolvedValueOnce(new Response(JSON.stringify({
         model: "llama3.2",
@@ -252,7 +266,8 @@ describe("invokeOllama", () => {
         },
         done: true,
         prompt_eval_count: 5,
-        eval_count: 6
+        eval_count: 6,
+        eval_duration: 2_000_000_000
       })));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -281,6 +296,11 @@ describe("invokeOllama", () => {
       inputTokens: 8,
       outputTokens: 10,
       totalTokens: 18
+    });
+    expect(result.generation).toEqual({
+      outputTokens: 10,
+      evalDurationMs: 3000,
+      tokensPerSecond: 3.33
     });
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls[0]?.[1]?.body).toContain("\"tools\"");

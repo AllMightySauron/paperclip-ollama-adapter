@@ -146,7 +146,13 @@ The adapter persists only lightweight continuity metadata in `sessionParams`:
 }
 ```
 
-Run telemetry such as token counts and durations stays in the run result, not in `sessionParams`. Model output history is not persisted unless conversation memory is added later as an explicit bounded feature.
+Run telemetry such as token counts, durations, and generation speed stays in the run result, not in `sessionParams`. On successful runs with Ollama timing data, stdout includes a line like:
+
+```text
+[ollama] generation_speed 128 output tokens in 4.20s = 30.48 tokens/s
+```
+
+The same values are also included in `resultJson.generation` as `outputTokens`, `evalDurationMs`, and `tokensPerSecond`. Model output history is not persisted unless conversation memory is added later as an explicit bounded feature.
 
 ## Major TODOs
 
