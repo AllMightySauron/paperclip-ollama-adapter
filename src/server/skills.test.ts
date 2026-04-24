@@ -203,6 +203,7 @@ Long instructions.`);
       }
     })));
     vi.stubGlobal("fetch", fetchMock);
+    const logs: Array<{ stream: "stdout" | "stderr"; chunk: string }> = [];
 
     const config = {
       paperclipRuntimeSkills: [
@@ -229,7 +230,11 @@ Long instructions.`);
           timeoutSec: 30,
           commandTimeoutSec: 120,
           maxToolCalls: 8,
+          logging: true,
           skillSelectionMode: "llm"
+        },
+        onLog: async (stream, chunk) => {
+          logs.push({ stream, chunk });
         }
       })).resolves.toMatchObject({
         skills: [
@@ -249,6 +254,11 @@ Long instructions.`);
           body: expect.stringContaining("\"stream\":false")
         })
       );
+      const joinedLogs = logs.map((log) => log.chunk).join("\n");
+      expect(joinedLogs).toContain("Classifying Paperclip skills");
+      expect(joinedLogs).toContain("requestBody");
+      expect(joinedLogs).toContain("Bring on a CTO");
+      expect(joinedLogs).toContain("paperclip-create-agent");
     } finally {
       await rm(root, { recursive: true, force: true });
     }

@@ -136,11 +136,28 @@ async function classifySkillCandidates(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), options.config.timeoutSec * 1000);
   const endpoint = buildOllamaApiUrl(options.config.baseUrl, OLLAMA_CHAT_PATH);
+  const requestBody = {
+    model: options.config.model,
+    messages: [
+      {
+        role: "system",
+        content: "You select which skills are relevant to a Paperclip wake. Return only strict JSON."
+      },
+      {
+        role: "user",
+        content: buildSkillClassifierPrompt(wakeContext, candidates)
+      }
+    ],
+    stream: false,
+    ...(options.config.think !== undefined ? { think: options.config.think } : {})
+  };
 
   try {
     await logSkillClassifier(options, "Classifying Paperclip skills", {
       endpoint,
-      candidates: candidates.map((candidate) => candidate.entry.key)
+      timeoutMs: options.config.timeoutSec * 1000,
+      candidates: candidates.map((candidate) => candidate.entry.key),
+      requestBody
     });
 
     const response = await fetch(endpoint, {
@@ -148,21 +165,7 @@ async function classifySkillCandidates(
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        model: options.config.model,
-        messages: [
-          {
-            role: "system",
-            content: "You select which skills are relevant to a Paperclip wake. Return only strict JSON."
-          },
-          {
-            role: "user",
-            content: buildSkillClassifierPrompt(wakeContext, candidates)
-          }
-        ],
-        stream: false,
-        ...(options.config.think !== undefined ? { think: options.config.think } : {})
-      }),
+      body: JSON.stringify(requestBody),
       signal: controller.signal
     });
 
