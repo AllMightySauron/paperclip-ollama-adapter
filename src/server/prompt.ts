@@ -63,19 +63,28 @@ function appendSkills(prompt: string, skills: OllamaSkill[]): string {
   }
 
   const renderedSkills = skills
-    .map((skill) => `## ${skill.name}
+    .map((skill) => {
+      const metadata = `## ${skill.name}
 
 Source: ${skill.path}
-Description: ${skill.description}
+Description: ${skill.description}`;
 
-${skill.body}`)
+      if (!skill.includeBody || skill.body === null) {
+        return `${metadata}
+Instructions: Not included for this wake. Use this skill only if the task clearly matches it.`;
+      }
+
+      return `${metadata}
+
+${skill.body}`;
+    })
     .join("\n\n---\n\n");
 
   return `${prompt}
 
 Available skills:
 
-The following skills adhere to the SKILL.md standard. Use a skill when its name, description, or instructions match the current task.
+The following Paperclip-managed skills are available. Some entries include only metadata to keep this wake focused; use a skill only when its name, description, or instructions match the current task.
 
 ${renderedSkills}`;
 }

@@ -50,14 +50,14 @@ export async function execute(
     source: readCommandCwdSource(ctx, config.commandCwd),
     cwd: resolvedCommandCwd
   });
-  const loadedSkills = await loadManagedSkills(ctx.config);
+  const loadedSkills = await loadManagedSkills(ctx.config, ctx.context);
   for (const warning of loadedSkills.warnings) {
     await ctx.onLog("stderr", `[${ADAPTER_TYPE}:skills] ${warning}\n`);
   }
   if (loadedSkills.skills.length > 0) {
     await ctx.onLog(
       "stdout",
-      `[${ADAPTER_TYPE}:skills] Loaded ${loadedSkills.skills.length} skill(s): ${loadedSkills.skills.map((skill) => skill.name).join(", ")}\n`
+      `[${ADAPTER_TYPE}:skills] Loaded ${loadedSkills.skills.length} skill(s): ${loadedSkills.skills.map((skill) => skill.includeBody ? skill.name : `${skill.name} (metadata)`).join(", ")}\n`
     );
   }
 

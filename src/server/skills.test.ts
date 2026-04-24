@@ -25,6 +25,20 @@ Start with findings.`)).toEqual({
     });
   });
 
+  it("parses folded YAML frontmatter descriptions", () => {
+    expect(parseSkillMarkdown(`---
+name: paperclip
+description: >
+  Use when working inside Paperclip heartbeats.
+  Includes API workflow.
+---
+
+# Paperclip`)).toMatchObject({
+      name: "paperclip",
+      description: "Use when working inside Paperclip heartbeats. Includes API workflow."
+    });
+  });
+
   it("requires standard name and description frontmatter", () => {
     expect(() => parseSkillMarkdown("# Missing frontmatter"))
       .toThrow("SKILL.md must start with YAML frontmatter");
@@ -94,12 +108,67 @@ Start with findings.`);
         desiredSkills: ["paperclipai/paperclip/repo-review"]
       });
 
-      await expect(loadManagedSkills(config)).resolves.toMatchObject({
+      await expect(loadManagedSkills(config, {
+        paperclipWake: {
+          issue: {
+            title: "Review repository changes"
+          }
+        }
+      })).resolves.toMatchObject({
         skills: [
           {
             name: "repo-review",
             description: "Use when reviewing repository changes.",
-            body: "# Repo Review\n\nStart with findings."
+            body: "# Repo Review\n\nStart with findings.",
+            includeBody: true
+          }
+        ],
+        warnings: []
+      });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps required but non-matching skills as metadata only", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "ollama-skill-test-"));
+    const skillDir = path.join(root, "paperclip-create-agent");
+    await mkdir(skillDir, { recursive: true });
+    await writeFile(path.join(skillDir, "SKILL.md"), `---
+name: paperclip-create-agent
+description: Use when hiring or creating agents.
+---
+
+# Create Agent
+
+Long instructions.`);
+
+    const config = {
+      paperclipRuntimeSkills: [
+        {
+          key: "paperclipai/paperclip/paperclip-create-agent",
+          runtimeName: "paperclip-create-agent",
+          source: skillDir,
+          required: true
+        }
+      ]
+    };
+
+    try {
+      await expect(loadManagedSkills(config, {
+        paperclipWake: {
+          issue: {
+            title: "Say hello"
+          }
+        }
+      })).resolves.toMatchObject({
+        skills: [
+          {
+            name: "paperclip-create-agent",
+            description: "Use when hiring or creating agents.",
+            body: null,
+            includeBody: false,
+            required: true
           }
         ],
         warnings: []

@@ -79,7 +79,8 @@ describe("buildPrompt", () => {
         name: "repo-review",
         description: "Use when reviewing repository changes.",
         path: "/workspace/skills/repo-review/SKILL.md",
-        body: "Start with findings ordered by severity."
+        body: "Start with findings ordered by severity.",
+        includeBody: true
       }
     ]);
 
@@ -87,5 +88,28 @@ describe("buildPrompt", () => {
     expect(prompt).toContain("## repo-review");
     expect(prompt).toContain("Description: Use when reviewing repository changes.");
     expect(prompt).toContain("Start with findings ordered by severity.");
+  });
+
+  it("omits non-matching skill bodies when only metadata is loaded", () => {
+    const prompt = buildPrompt(baseContext, {
+      model: "llama3.2",
+      baseUrl: "http://127.0.0.1:11434",
+      timeoutSec: 120,
+      commandTimeoutSec: 120,
+      maxToolCalls: 8
+    }, [
+      {
+        name: "paperclip-create-agent",
+        description: "Use when hiring or creating agents.",
+        path: "/workspace/skills/paperclip-create-agent/SKILL.md",
+        body: null,
+        includeBody: false
+      }
+    ]);
+
+    expect(prompt).toContain("## paperclip-create-agent");
+    expect(prompt).toContain("Description: Use when hiring or creating agents.");
+    expect(prompt).toContain("Instructions: Not included for this wake.");
+    expect(prompt).not.toContain("Long instructions");
   });
 });
