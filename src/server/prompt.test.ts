@@ -66,4 +66,26 @@ describe("buildPrompt", () => {
     expect(prompt).toContain("Find while suppressing errors");
     expect(prompt).toContain('Do not write args=["ls-R"].');
   });
+
+  it("includes loaded SKILL.md-standard skills in the prompt", () => {
+    const prompt = buildPrompt(baseContext, {
+      model: "llama3.2",
+      baseUrl: "http://127.0.0.1:11434",
+      timeoutSec: 120,
+      commandTimeoutSec: 120,
+      maxToolCalls: 8
+    }, [
+      {
+        name: "repo-review",
+        description: "Use when reviewing repository changes.",
+        path: "/workspace/skills/repo-review/SKILL.md",
+        body: "Start with findings ordered by severity."
+      }
+    ]);
+
+    expect(prompt).toContain("Available skills:");
+    expect(prompt).toContain("## repo-review");
+    expect(prompt).toContain("Description: Use when reviewing repository changes.");
+    expect(prompt).toContain("Start with findings ordered by severity.");
+  });
 });

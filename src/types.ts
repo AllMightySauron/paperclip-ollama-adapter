@@ -74,6 +74,14 @@ export type OllamaSpawnFn = (meta: {
   startedAt: string;
 }) => Promise<void>;
 
+/** Loaded skill metadata and instructions from a standard SKILL.md file. */
+export interface OllamaSkill {
+  name: string;
+  description: string;
+  path: string;
+  body: string;
+}
+
 /** Runtime options for the trusted run_command tool. */
 export interface OllamaCommandExecutionOptions {
   enabled: boolean;

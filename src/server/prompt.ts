@@ -1,6 +1,6 @@
 import type { AdapterExecutionContext } from "@paperclipai/adapter-utils";
 import { renderTemplate } from "@paperclipai/adapter-utils/server-utils";
-import type { OllamaAdapterConfig } from "../types.js";
+import type { OllamaAdapterConfig, OllamaSkill } from "../types.js";
 
 const DEFAULT_PROMPT_TEMPLATE = `You are {{agent.name}}, a Paperclip agent.
 
@@ -17,7 +17,8 @@ Continue the highest-priority work that is appropriate for this heartbeat.`;
  */
 export function buildPrompt(
   ctx: AdapterExecutionContext,
-  config: OllamaAdapterConfig
+  config: OllamaAdapterConfig,
+  skills: OllamaSkill[] = []
 ): string {
   const template = config.promptTemplate ?? DEFAULT_PROMPT_TEMPLATE;
   const rendered = renderTemplate(template, {
@@ -31,14 +32,15 @@ export function buildPrompt(
     context: ctx.context,
     contextJson: JSON.stringify(ctx.context, null, 2)
   });
+  const promptWithSkills = appendSkills(rendered, skills);
 
   if (!config.enableCommandExecution) {
-    return rendered;
+    return promptWithSkills;
   }
 
   // Keep this guidance compact: detailed enough to steer tool calls, but not so
   // verbose that Ollama-hosted models reject the request or degrade schema use.
-  return `${rendered}
+  return `${promptWithSkills}
 
 Command execution is enabled through the run_command tool.
 
@@ -53,4 +55,27 @@ Examples:
 - Run tests: command="npm", args=["test"]
 
 Do not write args=["ls-R"]. Use args=["-R"] instead.`;
+}
+
+function appendSkills(prompt: string, skills: OllamaSkill[]): string {
+  if (skills.length === 0) {
+    return prompt;
+  }
+
+  const renderedSkills = skills
+    .map((skill) => `## ${skill.name}
+
+Source: ${skill.path}
+Description: ${skill.description}
+
+${skill.body}`)
+    .join("\n\n---\n\n");
+
+  return `${prompt}
+
+Available skills:
+
+The following skills adhere to the SKILL.md standard. Use a skill when its name, description, or instructions match the current task.
+
+${renderedSkills}`;
 }

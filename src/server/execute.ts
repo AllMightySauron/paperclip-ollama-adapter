@@ -7,6 +7,7 @@ import { parseConfig } from "./config.js";
 import { invokeOllama } from "./ollama.js";
 import { buildPrompt } from "./prompt.js";
 import { parseSession } from "./session.js";
+import { loadManagedSkills } from "./skills.js";
 
 /**
  * Paperclip server entrypoint for a single adapter run.
@@ -44,15 +45,30 @@ export async function execute(
     think: config.think ?? null
   });
 
-  const prompt = buildPrompt(ctx, config);
-  await logDebug(ctx, config.logging, "Rendered prompt", {
-    length: prompt.length,
-    prompt
-  });
   const resolvedCommandCwd = resolveCommandCwd(ctx, config.commandCwd);
   await logDebug(ctx, config.logging, "Resolved command working directory", {
     source: readCommandCwdSource(ctx, config.commandCwd),
     cwd: resolvedCommandCwd
+  });
+  const loadedSkills = await loadManagedSkills(ctx.config);
+  for (const warning of loadedSkills.warnings) {
+    await ctx.onLog("stderr", `[${ADAPTER_TYPE}:skills] ${warning}\n`);
+  }
+  if (loadedSkills.skills.length > 0) {
+    await ctx.onLog(
+      "stdout",
+      `[${ADAPTER_TYPE}:skills] Loaded ${loadedSkills.skills.length} skill(s): ${loadedSkills.skills.map((skill) => skill.name).join(", ")}\n`
+    );
+  }
+
+  const prompt = buildPrompt(ctx, config, loadedSkills.skills);
+  await logDebug(ctx, config.logging, "Rendered prompt", {
+    length: prompt.length,
+    skills: loadedSkills.skills.map((skill) => ({
+      name: skill.name,
+      path: skill.path
+    })),
+    prompt
   });
 
   const result = await invokeOllama({

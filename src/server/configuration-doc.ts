@@ -23,6 +23,11 @@ Core fields:
 - \`instructions\` (string, optional): System instructions for the agent.
 - \`promptTemplate\` (string, optional): Prompt template for Paperclip wake context.
 
+Skills:
+- The adapter implements Paperclip-managed \`listSkills\` and \`syncSkills\` hooks.
+- Selected Paperclip runtime skills are injected into the Ollama prompt on each run.
+- Ollama has no native skill directory, so the adapter uses ephemeral prompt injection and does not write skills into the project workspace.
+
 Command execution requires a model that returns native Ollama \`message.tool_calls\` from \`/api/chat\`. Text-only tool-call imitations such as XML-style \`<function_calls>\` blocks are treated as normal assistant text and will not run commands.
 
 Major TODOs before production use:

@@ -86,6 +86,12 @@ Prompt template example:
 
 Supported template variables include `{{agent.id}}`, `{{agent.name}}`, `{{company.id}}`, `{{run.id}}`, `{{contextJson}}`, and dotted paths into the wake context such as `{{context.issue.title}}`.
 
+## Skills
+
+The adapter implements Paperclip-managed skill sync through `listSkills` and `syncSkills`. Skills selected in the Paperclip UI are read from Paperclip's runtime skill entries and injected into the Ollama prompt under `Available skills`.
+
+Ollama does not have a native local skill directory, so this adapter uses ephemeral prompt injection instead of writing skill files into the project workspace.
+
 ## Command Execution
 
 When `enableCommandExecution` is enabled, the adapter exposes a trusted local `run_command` tool to Ollama. The model can request commands in direct executable-plus-args form:

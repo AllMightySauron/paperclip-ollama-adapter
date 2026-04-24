@@ -8,6 +8,7 @@ import { execute } from "./execute.js";
 import { cacheDiscoveredModels, getCachedModels } from "./model-cache.js";
 import { listOllamaModels } from "./ollama.js";
 import { sessionCodec } from "./session.js";
+import { listOllamaSkills, syncOllamaSkills } from "./skills.js";
 import { testEnvironment } from "./test.js";
 
 /**
@@ -24,6 +25,8 @@ export const ollamaAdapter: ServerAdapterModule = {
   type: ADAPTER_TYPE,
   execute,
   testEnvironment,
+  listSkills: listOllamaSkills,
+  syncSkills: syncOllamaSkills,
   sessionCodec,
   supportsLocalAgentJwt: true,
   models: fallbackModels,
@@ -54,6 +57,11 @@ export function createServerAdapter(): ServerAdapterModule {
 export { execute } from "./execute.js";
 export { testEnvironment } from "./test.js";
 export { sessionCodec } from "./session.js";
+export {
+  listOllamaSkills,
+  syncOllamaSkills,
+  resolveOllamaDesiredSkillNames
+} from "./skills.js";
 
 function readModelDiscoveryBaseUrl(): string {
   return readDefaultBaseUrl();
