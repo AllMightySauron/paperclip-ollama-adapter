@@ -11,7 +11,8 @@ import {
   readPaperclipSkillSyncPreference,
   resolvePaperclipDesiredSkillNames
 } from "@paperclipai/adapter-utils/server-utils";
-import { ADAPTER_TYPE, type OllamaSkill } from "../types.js";
+import { ADAPTER_TYPE, type OllamaAdapterConfig, type OllamaLogFn, type OllamaSkill } from "../types.js";
+import { buildOllamaApiUrl, OLLAMA_CHAT_PATH } from "./ollama.js";
 
 const moduleDir = path.dirname(fileURLToPath(import.meta.url));
 
@@ -20,6 +21,22 @@ type ParsedSkillMarkdown = Pick<OllamaSkill, "name" | "description"> & { body: s
 export interface ManagedSkillLoadResult {
   skills: OllamaSkill[];
   warnings: string[];
+}
+
+export interface SkillClassifierOptions {
+  config: OllamaAdapterConfig;
+  onLog?: OllamaLogFn;
+}
+
+interface SkillCandidate {
+  entry: {
+    key: string;
+    runtimeName?: string | null;
+    required?: boolean;
+    source: string;
+  };
+  parsed: ParsedSkillMarkdown;
+  path: string;
 }
 
 export async function listOllamaSkills(
@@ -44,12 +61,14 @@ export function resolveOllamaDesiredSkillNames(
 
 export async function loadManagedSkills(
   config: Record<string, unknown>,
-  wakeContext: unknown
+  wakeContext: unknown,
+  classifierOptions?: SkillClassifierOptions
 ): Promise<ManagedSkillLoadResult> {
   const availableEntries = await readPaperclipRuntimeSkillEntries(config, moduleDir);
   const desiredSkills = resolvePaperclipDesiredSkillNames(config, availableEntries);
   const explicitlyDesiredSkills = resolveExplicitDesiredSkillNames(config, availableEntries);
   const availableByKey = new Map(availableEntries.map((entry) => [entry.key, entry]));
+  const candidates: SkillCandidate[] = [];
   const skills: OllamaSkill[] = [];
   const warnings: string[] = [];
   const wakeText = buildWakeText(wakeContext);
@@ -64,23 +83,192 @@ export async function loadManagedSkills(
     try {
       const skillPath = path.join(entry.source, "SKILL.md");
       const parsed = parseSkillMarkdown(await readFile(skillPath, "utf8"));
-      const includeBody = explicitlyDesiredSkills.has(entry.key)
-        || skillMatchesWake(parsed, entry, wakeText);
-      skills.push({
-        ...parsed,
-        key: entry.key,
-        path: skillPath,
-        body: includeBody ? parsed.body : null,
-        includeBody,
-        required: Boolean(entry.required)
-      });
+      candidates.push({ entry, parsed, path: skillPath });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       warnings.push(`${desiredSkill}: ${message}`);
     }
   }
 
+  const shouldUseClassifier = classifierOptions?.config.skillSelectionMode === "llm";
+  const classifierResult = shouldUseClassifier
+    ? await classifySkillCandidates(
+      candidates.filter((candidate) => !explicitlyDesiredSkills.has(candidate.entry.key)),
+      wakeContext,
+      classifierOptions
+    )
+    : { includeSkillKeys: new Set<string>(), usedClassifier: false };
+  if (classifierResult.warning) {
+    warnings.push(classifierResult.warning);
+  }
+
+  for (const candidate of candidates) {
+    const includeBody = explicitlyDesiredSkills.has(candidate.entry.key)
+      || classifierResult.includeSkillKeys.has(candidate.entry.key)
+      || (!classifierResult.usedClassifier && skillMatchesWake(candidate.parsed, candidate.entry, wakeText));
+
+    skills.push({
+      ...candidate.parsed,
+      key: candidate.entry.key,
+      path: candidate.path,
+      body: includeBody ? candidate.parsed.body : null,
+      includeBody,
+      required: Boolean(candidate.entry.required)
+    });
+  }
+
   return { skills, warnings };
+}
+
+async function classifySkillCandidates(
+  candidates: SkillCandidate[],
+  wakeContext: unknown,
+  options?: SkillClassifierOptions
+): Promise<{
+  includeSkillKeys: Set<string>;
+  usedClassifier: boolean;
+  warning?: string;
+}> {
+  if (!options || candidates.length === 0) {
+    return { includeSkillKeys: new Set(), usedClassifier: false };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), options.config.timeoutSec * 1000);
+  const endpoint = buildOllamaApiUrl(options.config.baseUrl, OLLAMA_CHAT_PATH);
+
+  try {
+    await logSkillClassifier(options, "Classifying Paperclip skills", {
+      endpoint,
+      candidates: candidates.map((candidate) => candidate.entry.key)
+    });
+
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: options.config.model,
+        messages: [
+          {
+            role: "system",
+            content: "You select which skills are relevant to a Paperclip wake. Return only strict JSON."
+          },
+          {
+            role: "user",
+            content: buildSkillClassifierPrompt(wakeContext, candidates)
+          }
+        ],
+        stream: false,
+        ...(options.config.think !== undefined ? { think: options.config.think } : {})
+      }),
+      signal: controller.signal
+    });
+
+    const payload = await response.json() as unknown;
+    if (!response.ok) {
+      return {
+        includeSkillKeys: new Set(),
+        usedClassifier: false,
+        warning: `Skill classifier failed with HTTP ${response.status}; using deterministic skill matching.`
+      };
+    }
+
+    const selected = parseSkillClassifierResponse(payload, candidates);
+    await logSkillClassifier(options, "Classified Paperclip skills", {
+      selectedSkillKeys: Array.from(selected)
+    });
+
+    return {
+      includeSkillKeys: selected,
+      usedClassifier: true
+    };
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    return {
+      includeSkillKeys: new Set(),
+      usedClassifier: false,
+      warning: `Skill classifier failed: ${reason}; using deterministic skill matching.`
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function buildSkillClassifierPrompt(wakeContext: unknown, candidates: SkillCandidate[]): string {
+  return `Wake context:
+${truncateForClassifier(JSON.stringify(wakeContext, null, 2), 4000)}
+
+Available skills:
+${JSON.stringify(candidates.map((candidate) => ({
+    key: candidate.entry.key,
+    name: candidate.parsed.name,
+    description: candidate.parsed.description
+  })), null, 2)}
+
+Return strict JSON in this exact shape:
+{"skillKeys":["skill-key-to-include"]}
+
+Only include a skill when its description is clearly useful for this wake. Return an empty array for simple tasks like greetings or when no skill is needed.`;
+}
+
+function parseSkillClassifierResponse(payload: unknown, candidates: SkillCandidate[]): Set<string> {
+  const validKeys = new Set(candidates.map((candidate) => candidate.entry.key));
+  const content = readAssistantContent(payload);
+  const parsed = parseJsonObject(content);
+  const rawSkillKeys = Array.isArray(parsed.skillKeys) ? parsed.skillKeys : [];
+
+  return new Set(rawSkillKeys.filter((value): value is string => (
+    typeof value === "string" && validKeys.has(value)
+  )));
+}
+
+function readAssistantContent(payload: unknown): string {
+  const record = readRecord(payload);
+  const message = readRecord(record.message);
+  return typeof message.content === "string" ? message.content : "";
+}
+
+function parseJsonObject(content: string): Record<string, unknown> {
+  try {
+    return readRecord(JSON.parse(content) as unknown);
+  } catch {
+    const match = /\{[\s\S]*\}/.exec(content);
+    if (!match) {
+      return {};
+    }
+
+    try {
+      return readRecord(JSON.parse(match[0]) as unknown);
+    } catch {
+      return {};
+    }
+  }
+}
+
+function readRecord(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null ? value as Record<string, unknown> : {};
+}
+
+function truncateForClassifier(value: string, maxLength: number): string {
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  return `${value.slice(0, maxLength)}\n...[truncated]`;
+}
+
+async function logSkillClassifier(
+  options: SkillClassifierOptions,
+  message: string,
+  data: Record<string, unknown>
+): Promise<void> {
+  if (!options.config.logging || !options.onLog) {
+    return;
+  }
+
+  await options.onLog("stdout", `[${ADAPTER_TYPE}:skills:debug] ${message}\n${JSON.stringify(data, null, 2)}\n`);
 }
 
 function resolveExplicitDesiredSkillNames(

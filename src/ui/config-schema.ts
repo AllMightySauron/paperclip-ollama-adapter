@@ -54,6 +54,17 @@ export const ollamaConfigSchema: AdapterConfigSchema = {
       ]
     },
     {
+      key: "skillSelectionMode",
+      label: "Skill Selection",
+      type: "select",
+      default: "deterministic",
+      hint: "Controls how Paperclip-managed skills are expanded into full prompt instructions. Deterministic uses local name/description matching. LLM asks Ollama to classify relevant skills first and falls back to deterministic matching if classification fails.",
+      options: [
+        { label: "Deterministic", value: "deterministic" },
+        { label: "LLM", value: "llm" }
+      ]
+    },
+    {
       key: "commandCwd",
       label: "Command Working Directory",
       type: "text",

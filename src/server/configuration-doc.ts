@@ -20,12 +20,15 @@ Core fields:
 - \`commandTimeoutSec\` (number, optional): Maximum seconds each model-requested command may run. Defaults to \`120\`.
 - \`maxToolCalls\` (number, optional): Maximum number of command tool calls in one run. Defaults to \`8\`.
 - \`thinkingEffort\` (true | false | "low" | "medium" | "high", optional): Fallback for Paperclip's built-in Thinking Effort field. The adapter's own \`think\` field is preferred because it exposes an explicit Off option in the UI.
+- \`skillSelectionMode\` ("deterministic" | "llm", optional): Controls how Paperclip-managed skills are expanded into full prompt instructions. Defaults to \`deterministic\`.
 - \`instructions\` (string, optional): System instructions for the agent.
 - \`promptTemplate\` (string, optional): Prompt template for Paperclip wake context.
 
 Skills:
 - The adapter implements Paperclip-managed \`listSkills\` and \`syncSkills\` hooks.
-- Selected Paperclip runtime skills are injected into the Ollama prompt on each run.
+- With \`skillSelectionMode=deterministic\`, required skills are expanded using local name/description matching.
+- With \`skillSelectionMode=llm\`, the adapter asks the configured Ollama model to classify the wake context against selected skill names and descriptions before the main request; if classification fails, it falls back to deterministic matching.
+- Explicitly selected skills are always injected in full.
 - Ollama has no native skill directory, so the adapter uses ephemeral prompt injection and does not write skills into the project workspace.
 
 Command execution requires a model that returns native Ollama \`message.tool_calls\` from \`/api/chat\`. Text-only tool-call imitations such as XML-style \`<function_calls>\` blocks are treated as normal assistant text and will not run commands.

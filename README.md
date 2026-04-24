@@ -53,6 +53,7 @@ When creating or editing an agent, select **Local Ollama** as the adapter type a
 | `maxToolCalls` | No | Maximum number of command tool calls allowed in one run (default: 8). |
 | `think` | No | Adapter-specific thinking control. Use `Off` to send `think=false` to Ollama. When set, this overrides Paperclip's built-in `thinkingEffort` value. |
 | `thinkingEffort` | No | Paperclip's built-in thinking effort control. Still supported as a fallback, but the adapter's own `Thinking` field is preferred because it exposes `Off`. |
+| `skillSelectionMode` | No | Controls how Paperclip-managed skills are expanded into full prompt instructions. `deterministic` uses local name/description matching. `llm` asks Ollama to classify relevant skills first and falls back to deterministic matching if classification fails. Defaults to `deterministic`. |
 | `instructions` | No | System prompt: the agent's role, persona, and rules |
 | `promptTemplate` | No | Template used to turn Paperclip wake context into the Ollama prompt |
 
@@ -90,7 +91,7 @@ Supported template variables include `{{agent.id}}`, `{{agent.name}}`, `{{compan
 
 The adapter implements Paperclip-managed skill sync through `listSkills` and `syncSkills`. Skills selected in the Paperclip UI are read from Paperclip's runtime skill entries and injected into the Ollama prompt under `Available skills`.
 
-Ollama does not have a native local skill directory, so this adapter uses ephemeral prompt injection instead of writing skill files into the project workspace.
+Ollama does not have a native local skill directory, so this adapter uses ephemeral prompt injection instead of writing skill files into the project workspace. With `skillSelectionMode: "deterministic"`, required skills are expanded using local name/description matching. With `skillSelectionMode: "llm"`, the adapter asks the configured Ollama model to classify the wake context against selected skill names and descriptions before the main request; if classification fails, it falls back to deterministic matching. Explicitly selected skills are always included in full.
 
 ## Command Execution
 

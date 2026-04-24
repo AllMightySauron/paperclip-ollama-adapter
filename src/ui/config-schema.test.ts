@@ -16,6 +16,7 @@ describe("getConfigSchema", () => {
       "logging",
       "think",
       "enableCommandExecution",
+      "skillSelectionMode",
       "commandCwd",
       "commandTimeoutSec",
       "maxToolCalls",
@@ -41,6 +42,14 @@ describe("getConfigSchema", () => {
         { label: "Low", value: "low" },
         { label: "Medium", value: "medium" },
         { label: "High", value: "high" }
+      ]
+    });
+    expect(schema.fields.find((field) => field.key === "skillSelectionMode")).toMatchObject({
+      type: "select",
+      default: "deterministic",
+      options: [
+        { label: "Deterministic", value: "deterministic" },
+        { label: "LLM", value: "llm" }
       ]
     });
   });
@@ -80,7 +89,8 @@ describe("buildConfigFromFormValues", () => {
       commandCwd: "/tmp",
       commandTimeoutSec: "20",
       maxToolCalls: "4",
-      think: "medium"
+      think: "medium",
+      skillSelectionMode: "llm"
     })).toMatchObject({
       model: "llama3.2",
       baseUrl: DEFAULT_BASE_URL,
@@ -90,7 +100,8 @@ describe("buildConfigFromFormValues", () => {
       commandCwd: "/tmp",
       commandTimeoutSec: 20,
       maxToolCalls: 4,
-      think: "medium"
+      think: "medium",
+      skillSelectionMode: "llm"
     });
   });
 

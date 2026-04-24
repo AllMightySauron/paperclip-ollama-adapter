@@ -1,13 +1,17 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   listOllamaSkills,
   loadManagedSkills,
   parseSkillMarkdown,
   syncOllamaSkills
 } from "./skills.js";
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe("parseSkillMarkdown", () => {
   it("parses SKILL.md frontmatter and body", () => {
@@ -173,6 +177,195 @@ Long instructions.`);
         ],
         warnings: []
       });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("uses Ollama to classify required skill body inclusion", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "ollama-skill-test-"));
+    const skillDir = path.join(root, "paperclip-create-agent");
+    await mkdir(skillDir, { recursive: true });
+    await writeFile(path.join(skillDir, "SKILL.md"), `---
+name: paperclip-create-agent
+description: Use when hiring or creating agents.
+---
+
+# Create Agent
+
+Long instructions.`);
+
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+      message: {
+        content: JSON.stringify({
+          skillKeys: ["paperclipai/paperclip/paperclip-create-agent"]
+        })
+      }
+    })));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const config = {
+      paperclipRuntimeSkills: [
+        {
+          key: "paperclipai/paperclip/paperclip-create-agent",
+          runtimeName: "paperclip-create-agent",
+          source: skillDir,
+          required: true
+        }
+      ]
+    };
+
+    try {
+      await expect(loadManagedSkills(config, {
+        paperclipWake: {
+          issue: {
+            title: "Bring on a CTO"
+          }
+        }
+      }, {
+        config: {
+          model: "qwen3.5:0.8b",
+          baseUrl: "http://ollama.local:11434",
+          timeoutSec: 30,
+          commandTimeoutSec: 120,
+          maxToolCalls: 8,
+          skillSelectionMode: "llm"
+        }
+      })).resolves.toMatchObject({
+        skills: [
+          {
+            name: "paperclip-create-agent",
+            body: "# Create Agent\n\nLong instructions.",
+            includeBody: true
+          }
+        ],
+        warnings: []
+      });
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        "http://ollama.local:11434/api/chat",
+        expect.objectContaining({
+          method: "POST",
+          body: expect.stringContaining("\"stream\":false")
+        })
+      );
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("falls back to deterministic matching when classification fails", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "ollama-skill-test-"));
+    const skillDir = path.join(root, "repo-review");
+    await mkdir(skillDir, { recursive: true });
+    await writeFile(path.join(skillDir, "SKILL.md"), `---
+name: repo-review
+description: Use when reviewing repository changes.
+---
+
+# Repo Review
+
+Review instructions.`);
+
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      throw new Error("offline");
+    }));
+
+    const config = {
+      paperclipRuntimeSkills: [
+        {
+          key: "paperclipai/paperclip/repo-review",
+          runtimeName: "repo-review",
+          source: skillDir,
+          required: true
+        }
+      ]
+    };
+
+    try {
+      const result = await loadManagedSkills(config, {
+        paperclipWake: {
+          issue: {
+            title: "Review repository changes"
+          }
+        }
+      }, {
+        config: {
+          model: "qwen3.5:0.8b",
+          baseUrl: "http://ollama.local:11434",
+          timeoutSec: 30,
+          commandTimeoutSec: 120,
+          maxToolCalls: 8,
+          skillSelectionMode: "llm"
+        }
+      });
+
+      expect(result.skills).toMatchObject([
+        {
+          name: "repo-review",
+          body: "# Repo Review\n\nReview instructions.",
+          includeBody: true
+        }
+      ]);
+      expect(result.warnings.join("\n")).toContain("Skill classifier failed");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not call the classifier in deterministic mode", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "ollama-skill-test-"));
+    const skillDir = path.join(root, "repo-review");
+    await mkdir(skillDir, { recursive: true });
+    await writeFile(path.join(skillDir, "SKILL.md"), `---
+name: repo-review
+description: Use when reviewing repository changes.
+---
+
+# Repo Review
+
+Review instructions.`);
+
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const config = {
+      paperclipRuntimeSkills: [
+        {
+          key: "paperclipai/paperclip/repo-review",
+          runtimeName: "repo-review",
+          source: skillDir,
+          required: true
+        }
+      ]
+    };
+
+    try {
+      const result = await loadManagedSkills(config, {
+        paperclipWake: {
+          issue: {
+            title: "Review repository changes"
+          }
+        }
+      }, {
+        config: {
+          model: "qwen3.5:0.8b",
+          baseUrl: "http://ollama.local:11434",
+          timeoutSec: 30,
+          commandTimeoutSec: 120,
+          maxToolCalls: 8,
+          skillSelectionMode: "deterministic"
+        }
+      });
+
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(result.skills).toMatchObject([
+        {
+          name: "repo-review",
+          body: "# Repo Review\n\nReview instructions.",
+          includeBody: true
+        }
+      ]);
     } finally {
       await rm(root, { recursive: true, force: true });
     }

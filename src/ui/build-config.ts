@@ -1,7 +1,9 @@
 import {
   DEFAULT_TIMEOUT_SEC,
+  OLLAMA_SKILL_SELECTION_MODES,
   OLLAMA_THINK_LEVELS,
   type OllamaAdapterConfig,
+  type OllamaSkillSelectionMode,
   type OllamaThinking
 } from "../types.js";
 import { readDefaultBaseUrl } from "../base-url.js";
@@ -16,6 +18,7 @@ export type OllamaConfigFormValues = Partial<{
   commandTimeoutSec: string | number;
   maxToolCalls: string | number;
   think: "" | "true" | "false" | OllamaThinking;
+  skillSelectionMode: "" | OllamaSkillSelectionMode;
   instructions: string;
   promptTemplate: string;
 }>;
@@ -49,6 +52,9 @@ export function buildConfigFromFormValues(
   if (values.think !== undefined && values.think !== "") {
     config.think = normalizeThinkFormValue(values.think);
   }
+  if (values.skillSelectionMode !== undefined && values.skillSelectionMode !== "") {
+    config.skillSelectionMode = normalizeSkillSelectionModeFormValue(values.skillSelectionMode);
+  }
   if (values.instructions) {
     config.instructions = values.instructions;
   }
@@ -57,6 +63,13 @@ export function buildConfigFromFormValues(
   }
 
   return config;
+}
+
+function normalizeSkillSelectionModeFormValue(value: OllamaSkillSelectionMode): OllamaSkillSelectionMode {
+  if (typeof value === "string" && OLLAMA_SKILL_SELECTION_MODES.includes(value)) {
+    return value;
+  }
+  return "deterministic";
 }
 
 function normalizeThinkFormValue(value: "true" | "false" | OllamaThinking): OllamaThinking {

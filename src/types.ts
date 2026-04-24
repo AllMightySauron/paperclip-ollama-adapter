@@ -4,10 +4,12 @@ export const DEFAULT_TIMEOUT_SEC = 120;
 export const DEFAULT_COMMAND_TIMEOUT_SEC = 120;
 export const DEFAULT_MAX_TOOL_CALLS = 8;
 export const OLLAMA_THINK_LEVELS = ["low", "medium", "high"] as const;
+export const OLLAMA_SKILL_SELECTION_MODES = ["deterministic", "llm"] as const;
 
 /** Ollama accepts either a boolean thinking flag or one of its named effort levels. */
 export type OllamaThinkLevel = typeof OLLAMA_THINK_LEVELS[number];
 export type OllamaThinking = boolean | OllamaThinkLevel;
+export type OllamaSkillSelectionMode = typeof OLLAMA_SKILL_SELECTION_MODES[number];
 
 /** Fully normalized adapter configuration used by the server runtime. */
 export interface OllamaAdapterConfig {
@@ -33,6 +35,8 @@ export interface OllamaAdapterConfig {
   instructions?: string;
   /** Optional Paperclip template used to render the user prompt. */
   promptTemplate?: string;
+  /** How selected Paperclip skills are expanded from metadata into full prompt instructions. */
+  skillSelectionMode: OllamaSkillSelectionMode;
 }
 
 /** Session state persisted by Paperclip between adapter runs. */

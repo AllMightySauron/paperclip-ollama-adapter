@@ -68,7 +68,8 @@ describe("parseConfig", () => {
         commandCwd: "/tmp",
         commandTimeoutSec: "15",
         maxToolCalls: "3",
-        think: "high"
+        think: "high",
+        skillSelectionMode: "llm"
       }
     });
 
@@ -82,7 +83,8 @@ describe("parseConfig", () => {
       commandCwd: "/tmp",
       commandTimeoutSec: 15,
       maxToolCalls: 3,
-      think: "high"
+      think: "high",
+      skillSelectionMode: "llm"
     });
   });
 
@@ -93,7 +95,8 @@ describe("parseConfig", () => {
     expect(result.config).toMatchObject({
       enableCommandExecution: false,
       commandTimeoutSec: 120,
-      maxToolCalls: 8
+      maxToolCalls: 8,
+      skillSelectionMode: "deterministic"
     });
   });
 
@@ -141,5 +144,19 @@ describe("parseConfig", () => {
 
     expect(result.config).toBeNull();
     expect(result.errors).toContain('think must be true, false, "low", "medium", "high", or omitted');
+  });
+
+  it.each(["deterministic", "llm"])("accepts skillSelectionMode=%p", (mode) => {
+    const result = parseConfig({ model: "llama3.2", skillSelectionMode: mode });
+
+    expect(result.errors).toEqual([]);
+    expect(result.config?.skillSelectionMode).toBe(mode);
+  });
+
+  it("rejects unsupported skillSelectionMode values", () => {
+    const result = parseConfig({ model: "llama3.2", skillSelectionMode: "magic" });
+
+    expect(result.config).toBeNull();
+    expect(result.errors).toContain('skillSelectionMode must be "deterministic", "llm", or omitted');
   });
 });

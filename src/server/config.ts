@@ -2,8 +2,10 @@ import {
   DEFAULT_COMMAND_TIMEOUT_SEC,
   DEFAULT_MAX_TOOL_CALLS,
   DEFAULT_TIMEOUT_SEC,
+  OLLAMA_SKILL_SELECTION_MODES,
   OLLAMA_THINK_LEVELS,
   type OllamaAdapterConfig,
+  type OllamaSkillSelectionMode,
   type OllamaThinking
 } from "../types.js";
 import { readDefaultBaseUrl } from "../base-url.js";
@@ -44,6 +46,8 @@ export function parseConfig(raw: Record<string, unknown>): ConfigParseResult {
   const think = parseThink(thinkValue);
   const instructions = readString(readConfigValue(raw, schemaValues, "instructions"));
   const promptTemplate = readString(readConfigValue(raw, schemaValues, "promptTemplate"));
+  const skillSelectionModeValue = readConfigValue(raw, schemaValues, "skillSelectionMode");
+  const skillSelectionMode = parseSkillSelectionMode(skillSelectionModeValue);
 
   if (!model) {
     errors.push("Missing required field: model");
@@ -73,6 +77,10 @@ export function parseConfig(raw: Record<string, unknown>): ConfigParseResult {
     errors.push('think must be true, false, "low", "medium", "high", or omitted');
   }
 
+  if (skillSelectionModeValue !== undefined && skillSelectionMode === undefined) {
+    errors.push('skillSelectionMode must be "deterministic", "llm", or omitted');
+  }
+
   if (errors.length > 0 || !model) {
     return { config: null, errors };
   }
@@ -85,6 +93,7 @@ export function parseConfig(raw: Record<string, unknown>): ConfigParseResult {
       enableCommandExecution,
       commandTimeoutSec,
       maxToolCalls,
+      skillSelectionMode: skillSelectionMode ?? "deterministic",
       ...(commandCwd ? { commandCwd } : {}),
       ...(logging !== undefined ? { logging } : {}),
       ...(think !== undefined ? { think } : {}),
@@ -169,6 +178,26 @@ function parseThink(value: unknown): OllamaThinking | undefined {
   }
 
   return undefined;
+}
+
+function parseSkillSelectionMode(value: unknown): OllamaSkillSelectionMode | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (isSkillSelectionMode(normalized)) {
+    return normalized;
+  }
+
+  return undefined;
+}
+
+function isSkillSelectionMode(value: string): value is OllamaSkillSelectionMode {
+  return OLLAMA_SKILL_SELECTION_MODES.includes(value as OllamaSkillSelectionMode);
 }
 
 function isThinkLevel(value: string): value is typeof OLLAMA_THINK_LEVELS[number] {

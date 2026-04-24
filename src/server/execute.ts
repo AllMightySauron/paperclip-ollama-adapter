@@ -40,6 +40,7 @@ export async function execute(
     commandCwd: config.commandCwd ?? null,
     commandTimeoutSec: config.commandTimeoutSec,
     maxToolCalls: config.maxToolCalls,
+    skillSelectionMode: config.skillSelectionMode,
     hasInstructions: Boolean(config.instructions),
     hasPromptTemplate: Boolean(config.promptTemplate),
     think: config.think ?? null
@@ -50,7 +51,10 @@ export async function execute(
     source: readCommandCwdSource(ctx, config.commandCwd),
     cwd: resolvedCommandCwd
   });
-  const loadedSkills = await loadManagedSkills(ctx.config, ctx.context);
+  const loadedSkills = await loadManagedSkills(ctx.config, ctx.context, {
+    config,
+    onLog: ctx.onLog
+  });
   for (const warning of loadedSkills.warnings) {
     await ctx.onLog("stderr", `[${ADAPTER_TYPE}:skills] ${warning}\n`);
   }
