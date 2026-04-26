@@ -29,6 +29,13 @@ export const ollamaConfigSchema: AdapterConfigSchema = {
       ]
     },
     {
+      key: "ollamaTimeoutSec",
+      label: "Ollama Timeout Seconds",
+      type: "number",
+      default: 60,
+      hint: "HTTP timeout for each Ollama /api/chat request, including skill classification and generation. Increase this for long non-streaming generations."
+    },
+    {
       key: "think",
       label: "Thinking",
       type: "select",

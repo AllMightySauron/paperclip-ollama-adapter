@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_BASE_URL, DEFAULT_TIMEOUT_SEC } from "../types.js";
+import { DEFAULT_BASE_URL, DEFAULT_OLLAMA_TIMEOUT_SEC, DEFAULT_TIMEOUT_SEC } from "../types.js";
 import { parseConfig } from "./config.js";
 
 describe("parseConfig", () => {
@@ -21,7 +21,8 @@ describe("parseConfig", () => {
     expect(result.config).toMatchObject({
       model: "llama3.2",
       baseUrl: DEFAULT_BASE_URL,
-      timeoutSec: DEFAULT_TIMEOUT_SEC
+      timeoutSec: DEFAULT_TIMEOUT_SEC,
+      ollamaTimeoutSec: DEFAULT_OLLAMA_TIMEOUT_SEC
     });
   });
 
@@ -63,6 +64,7 @@ describe("parseConfig", () => {
       model: "llama3.2",
       adapterSchemaValues: {
         baseUrl: "http://ollama.example.test:11434",
+        ollamaTimeoutSec: "45",
         logging: "true",
         enableCommandExecution: "true",
         commandCwd: "/tmp",
@@ -78,6 +80,7 @@ describe("parseConfig", () => {
       model: "llama3.2",
       baseUrl: "http://ollama.example.test:11434",
       timeoutSec: DEFAULT_TIMEOUT_SEC,
+      ollamaTimeoutSec: 45,
       logging: true,
       enableCommandExecution: true,
       commandCwd: "/tmp",
@@ -94,6 +97,7 @@ describe("parseConfig", () => {
     expect(result.errors).toEqual([]);
     expect(result.config).toMatchObject({
       enableCommandExecution: false,
+      ollamaTimeoutSec: 60,
       commandTimeoutSec: 120,
       maxToolCalls: 8,
       skillSelectionMode: "deterministic"
@@ -104,10 +108,12 @@ describe("parseConfig", () => {
     const result = parseConfig({
       model: "llama3.2",
       commandTimeoutSec: 0,
-      maxToolCalls: 0
+      maxToolCalls: 0,
+      ollamaTimeoutSec: 0
     });
 
     expect(result.config).toBeNull();
+    expect(result.errors).toContain("ollamaTimeoutSec must be greater than 0");
     expect(result.errors).toContain("commandTimeoutSec must be greater than 0");
     expect(result.errors).toContain("maxToolCalls must be a positive integer");
   });

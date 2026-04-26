@@ -98,6 +98,7 @@ describe("invokeOllama", () => {
       expect.objectContaining({
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        dispatcher: expect.any(Object),
         body: JSON.stringify({
           model: "llama3.2",
           messages: [{ role: "user", content: "Continue." }],

@@ -1,4 +1,5 @@
 import {
+  DEFAULT_OLLAMA_TIMEOUT_SEC,
   DEFAULT_TIMEOUT_SEC,
   OLLAMA_SKILL_SELECTION_MODES,
   OLLAMA_THINK_LEVELS,
@@ -12,6 +13,7 @@ export type OllamaConfigFormValues = Partial<{
   model: string;
   baseUrl: string;
   timeoutSec: string | number;
+  ollamaTimeoutSec: string | number;
   logging: boolean | "true" | "false";
   enableCommandExecution: boolean | "true" | "false";
   commandCwd: string;
@@ -31,7 +33,8 @@ export function buildConfigFromFormValues(
   const config: Partial<OllamaAdapterConfig> = {
     model: values.model?.trim() ?? "",
     baseUrl: values.baseUrl?.trim() || readDefaultBaseUrl(),
-    timeoutSec: Number(values.timeoutSec ?? DEFAULT_TIMEOUT_SEC)
+    timeoutSec: Number(values.timeoutSec ?? DEFAULT_TIMEOUT_SEC),
+    ollamaTimeoutSec: Number(values.ollamaTimeoutSec ?? DEFAULT_OLLAMA_TIMEOUT_SEC)
   };
 
   if (values.logging !== undefined) {

@@ -1,6 +1,7 @@
 import {
   DEFAULT_COMMAND_TIMEOUT_SEC,
   DEFAULT_MAX_TOOL_CALLS,
+  DEFAULT_OLLAMA_TIMEOUT_SEC,
   DEFAULT_TIMEOUT_SEC,
   OLLAMA_SKILL_SELECTION_MODES,
   OLLAMA_THINK_LEVELS,
@@ -29,6 +30,10 @@ export function parseConfig(raw: Record<string, unknown>): ConfigParseResult {
   const model = readString(readConfigValue(raw, schemaValues, "model"))?.trim();
   const baseUrl = readString(readConfigValue(raw, schemaValues, "baseUrl"))?.trim() || readDefaultBaseUrl();
   const timeoutSec = readNumber(readConfigValue(raw, schemaValues, "timeoutSec"), DEFAULT_TIMEOUT_SEC);
+  const ollamaTimeoutSec = readNumber(
+    readConfigValue(raw, schemaValues, "ollamaTimeoutSec"),
+    DEFAULT_OLLAMA_TIMEOUT_SEC
+  );
   const logging = readBoolean(readConfigValue(raw, schemaValues, "logging"));
   const enableCommandExecution = readBoolean(readConfigValue(raw, schemaValues, "enableCommandExecution")) ?? false;
   const commandCwd = readString(readConfigValue(raw, schemaValues, "commandCwd"))
@@ -61,6 +66,10 @@ export function parseConfig(raw: Record<string, unknown>): ConfigParseResult {
     errors.push("timeoutSec must be greater than 0");
   }
 
+  if (!Number.isFinite(ollamaTimeoutSec) || ollamaTimeoutSec <= 0) {
+    errors.push("ollamaTimeoutSec must be greater than 0");
+  }
+
   if (!Number.isFinite(commandTimeoutSec) || commandTimeoutSec <= 0) {
     errors.push("commandTimeoutSec must be greater than 0");
   }
@@ -90,6 +99,7 @@ export function parseConfig(raw: Record<string, unknown>): ConfigParseResult {
       model,
       baseUrl: stripTrailingSlash(baseUrl),
       timeoutSec,
+      ollamaTimeoutSec,
       enableCommandExecution,
       commandTimeoutSec,
       maxToolCalls,

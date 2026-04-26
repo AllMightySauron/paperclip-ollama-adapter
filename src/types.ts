@@ -1,6 +1,7 @@
 export const ADAPTER_TYPE = "ollama_local";
 export const DEFAULT_BASE_URL = "http://127.0.0.1:11434";
 export const DEFAULT_TIMEOUT_SEC = 120;
+export const DEFAULT_OLLAMA_TIMEOUT_SEC = 60;
 export const DEFAULT_COMMAND_TIMEOUT_SEC = 120;
 export const DEFAULT_MAX_TOOL_CALLS = 8;
 export const OLLAMA_THINK_LEVELS = ["low", "medium", "high"] as const;
@@ -19,6 +20,8 @@ export interface OllamaAdapterConfig {
   baseUrl: string;
   /** Maximum number of seconds for a full Ollama run before the adapter aborts. */
   timeoutSec: number;
+  /** Maximum number of seconds allowed for each Ollama HTTP request. */
+  ollamaTimeoutSec: number;
   /** When enabled, logs prompts, request payloads, raw responses, and tool activity. */
   logging?: boolean;
   /** Allows the model to request trusted local command execution via run_command. */

@@ -12,6 +12,7 @@ import {
   resolvePaperclipDesiredSkillNames
 } from "@paperclipai/adapter-utils/server-utils";
 import { ADAPTER_TYPE, type OllamaAdapterConfig, type OllamaLogFn, type OllamaSkill } from "../types.js";
+import { buildOllamaFetchInit } from "./http.js";
 import { buildOllamaApiUrl, OLLAMA_CHAT_PATH } from "./ollama.js";
 
 const moduleDir = path.dirname(fileURLToPath(import.meta.url));
@@ -134,7 +135,8 @@ async function classifySkillCandidates(
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), options.config.timeoutSec * 1000);
+  const timeoutMs = options.config.ollamaTimeoutSec * 1000;
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   const endpoint = buildOllamaApiUrl(options.config.baseUrl, OLLAMA_CHAT_PATH);
   const requestBody = {
     model: options.config.model,
@@ -155,19 +157,19 @@ async function classifySkillCandidates(
   try {
     await logSkillClassifier(options, "Classifying Paperclip skills", {
       endpoint,
-      timeoutMs: options.config.timeoutSec * 1000,
+      timeoutMs,
       candidates: candidates.map((candidate) => candidate.entry.key),
       requestBody
     });
 
-    const response = await fetch(endpoint, {
+    const response = await fetch(endpoint, buildOllamaFetchInit(timeoutMs, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify(requestBody),
       signal: controller.signal
-    });
+    }));
 
     const payload = await response.json() as unknown;
     if (!response.ok) {

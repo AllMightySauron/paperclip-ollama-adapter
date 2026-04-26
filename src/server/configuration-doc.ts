@@ -12,7 +12,8 @@ Model dropdown:
 Core fields:
 - \`model\` (string, required): Ollama model name, for example \`llama3.2\` or \`qwen2.5-coder\`.
 - \`baseUrl\` (string, optional): Ollama server root. Defaults to \`OLLAMA_BASE_URL\` when set, otherwise \`http://127.0.0.1:11434\`.
-- \`timeoutSec\` (number, optional): Paperclip's built-in timeout control. The adapter uses this as the Ollama request timeout in seconds. Defaults to \`120\`.
+- \`timeoutSec\` (number, optional): Paperclip's built-in run timeout control. Defaults to \`120\`.
+- \`ollamaTimeoutSec\` (number, optional): HTTP timeout for each Ollama \`/api/chat\` call, including skill classification and generation. Defaults to \`60\`; increase this for long non-streaming generations.
 - \`logging\` (boolean, optional): Enables detailed Paperclip logs for prompt rendering, Ollama chat request bodies, raw Ollama replies, parsed results, and failures. Defaults to \`false\`.
 - \`think\` (false | "low" | "medium" | "high", optional): Adapter-specific thinking control. Use \`false\` to disable thinking. When set, this overrides Paperclip's built-in \`thinkingEffort\` value.
 - \`enableCommandExecution\` (boolean, optional): Enables trusted local \`run_command\` tool calls from Ollama. Defaults to \`false\`.

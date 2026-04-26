@@ -14,6 +14,7 @@ describe("getConfigSchema", () => {
     expect(schema.fields.map((field) => field.key)).toEqual([
       "baseUrl",
       "logging",
+      "ollamaTimeoutSec",
       "think",
       "enableCommandExecution",
       "skillSelectionMode",
@@ -28,6 +29,10 @@ describe("getConfigSchema", () => {
     expect(schema.fields.find((field) => field.key === "logging")).toMatchObject({
       type: "select",
       default: "false"
+    });
+    expect(schema.fields.find((field) => field.key === "ollamaTimeoutSec")).toMatchObject({
+      type: "number",
+      default: 60
     });
     expect(schema.fields.find((field) => field.key === "enableCommandExecution")).toMatchObject({
       type: "select",
@@ -84,6 +89,7 @@ describe("buildConfigFromFormValues", () => {
       model: " llama3.2 ",
       baseUrl: "",
       timeoutSec: "30",
+      ollamaTimeoutSec: "45",
       logging: "true",
       enableCommandExecution: "true",
       commandCwd: "/tmp",
@@ -95,6 +101,7 @@ describe("buildConfigFromFormValues", () => {
       model: "llama3.2",
       baseUrl: DEFAULT_BASE_URL,
       timeoutSec: 30,
+      ollamaTimeoutSec: 45,
       logging: true,
       enableCommandExecution: true,
       commandCwd: "/tmp",

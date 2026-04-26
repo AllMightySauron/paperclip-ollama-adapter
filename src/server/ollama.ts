@@ -11,6 +11,7 @@ import {
   runTrustedCommand,
   type RunCommandOutput
 } from "./commands.js";
+import { buildOllamaFetchInit } from "./http.js";
 import { createPlaceholderSession, initializeSession } from "./session.js";
 
 export const OLLAMA_CHAT_PATH = "/api/chat";
@@ -67,14 +68,14 @@ export async function invokeOllama(
           : null
       });
 
-      const response = await fetch(chatUrl, {
+      const response = await fetch(chatUrl, buildOllamaFetchInit(request.timeoutMs, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify(body),
         signal: controller.signal
-      });
+      }));
 
       const payload = await readJsonResponse(response);
       rawResponses.push(payload);

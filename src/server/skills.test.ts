@@ -228,6 +228,7 @@ Long instructions.`);
           model: "qwen3.5:0.8b",
           baseUrl: "http://ollama.local:11434",
           timeoutSec: 30,
+          ollamaTimeoutSec: 45,
           commandTimeoutSec: 120,
           maxToolCalls: 8,
           logging: true,
@@ -251,6 +252,7 @@ Long instructions.`);
         "http://ollama.local:11434/api/chat",
         expect.objectContaining({
           method: "POST",
+          dispatcher: expect.any(Object),
           body: expect.stringContaining("\"stream\":false")
         })
       );
@@ -304,6 +306,7 @@ Review instructions.`);
           model: "qwen3.5:0.8b",
           baseUrl: "http://ollama.local:11434",
           timeoutSec: 30,
+          ollamaTimeoutSec: 45,
           commandTimeoutSec: 120,
           maxToolCalls: 8,
           skillSelectionMode: "llm"
@@ -362,6 +365,7 @@ Review instructions.`);
           model: "qwen3.5:0.8b",
           baseUrl: "http://ollama.local:11434",
           timeoutSec: 30,
+          ollamaTimeoutSec: 45,
           commandTimeoutSec: 120,
           maxToolCalls: 8,
           skillSelectionMode: "deterministic"

@@ -31,6 +31,7 @@ describe("buildPrompt", () => {
       model: "llama3.2",
       baseUrl: "http://127.0.0.1:11434",
       timeoutSec: 120,
+      ollamaTimeoutSec: 60,
       promptTemplate: "Agent {{ agent.name }} handles {{context.taskId}} in {{company.id}} for {{run.id}}."
     });
 
@@ -42,6 +43,7 @@ describe("buildPrompt", () => {
       model: "llama3.2",
       baseUrl: "http://127.0.0.1:11434",
       timeoutSec: 120,
+      ollamaTimeoutSec: 60,
       promptTemplate: "Context:\n{{contextJson}}"
     });
 
@@ -54,6 +56,7 @@ describe("buildPrompt", () => {
       model: "llama3.2",
       baseUrl: "http://127.0.0.1:11434",
       timeoutSec: 120,
+      ollamaTimeoutSec: 60,
       enableCommandExecution: true,
       commandTimeoutSec: 120,
       maxToolCalls: 8
@@ -73,6 +76,7 @@ describe("buildPrompt", () => {
       model: "llama3.2",
       baseUrl: "http://127.0.0.1:11434",
       timeoutSec: 120,
+      ollamaTimeoutSec: 60,
       commandTimeoutSec: 120,
       maxToolCalls: 8
     }, [
@@ -96,6 +100,7 @@ describe("buildPrompt", () => {
       model: "llama3.2",
       baseUrl: "http://127.0.0.1:11434",
       timeoutSec: 120,
+      ollamaTimeoutSec: 60,
       commandTimeoutSec: 120,
       maxToolCalls: 8
     }, [
