@@ -46,6 +46,7 @@ Command execution is enabled through the run_command tool.
 
 Use run_command only when you need local workspace information or need to run a script.
 The "command" value must be exactly one executable. The "args" array must contain only that executable's arguments.
+Omit "cwd" unless you need a different directory. If you set "cwd", use an absolute path such as "/paperclip/...".
 If you need shell syntax such as redirects, pipes, or &&, use command="sh" and args=["-lc", "..."].
 
 Examples:

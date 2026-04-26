@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseRunCommandInput } from "./commands.js";
+import { parseRunCommandInput, resolveRunCommandCwd } from "./commands.js";
 
 describe("parseRunCommandInput", () => {
   it("accepts direct command arguments", () => {
@@ -60,5 +60,24 @@ describe("parseRunCommandInput", () => {
       command: "sh",
       args: ["-lc", "grep 'hello world' 'README.md'"]
     });
+  });
+});
+
+describe("resolveRunCommandCwd", () => {
+  it("keeps absolute command cwd values", () => {
+    expect(resolveRunCommandCwd("/paperclip/workspace", "/default"))
+      .toBe("/paperclip/workspace");
+  });
+
+  it("repairs Paperclip absolute paths emitted without a leading slash", () => {
+    expect(resolveRunCommandCwd(
+      "paperclip/instances/default/projects/project-1/_default",
+      "/paperclip/instances/default/workspaces/agent-home"
+    )).toBe("/paperclip/instances/default/projects/project-1/_default");
+  });
+
+  it("resolves other relative cwd values from the default cwd", () => {
+    expect(resolveRunCommandCwd("subdir", "/paperclip/workspace"))
+      .toBe("/paperclip/workspace/subdir");
   });
 });

@@ -2,6 +2,7 @@ import {
   ensureAbsoluteDirectory,
   runChildProcess
 } from "@paperclipai/adapter-utils/server-utils";
+import path from "node:path";
 import type {
   OllamaLogFn,
   OllamaSpawnFn
@@ -52,7 +53,7 @@ export async function runTrustedCommand(
   }
 
   const args = invocation.args;
-  const cwd = input.cwd?.trim() || options.defaultCwd;
+  const cwd = resolveRunCommandCwd(input.cwd, options.defaultCwd);
 
   await ensureAbsoluteDirectory(cwd);
   await options.onLog("stdout", `[ollama:tool] run_command ${formatCommand(command, args)}\n`);
@@ -77,6 +78,26 @@ export async function runTrustedCommand(
     stdout: result.stdout,
     stderr: result.stderr
   };
+}
+
+export function resolveRunCommandCwd(
+  requestedCwd: string | undefined,
+  defaultCwd: string
+): string {
+  const trimmed = requestedCwd?.trim();
+  if (!trimmed) {
+    return defaultCwd;
+  }
+
+  if (path.isAbsolute(trimmed)) {
+    return trimmed;
+  }
+
+  if (trimmed === "paperclip" || trimmed.startsWith("paperclip/")) {
+    return `/${trimmed}`;
+  }
+
+  return path.resolve(defaultCwd, trimmed);
 }
 
 /**
