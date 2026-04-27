@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseRunCommandInput, resolveRunCommandCwd } from "./commands.js";
+import { parseRunCommandInput, readPaperclipEnv, resolveRunCommandCwd } from "./commands.js";
 
 describe("parseRunCommandInput", () => {
   it("accepts direct command arguments", () => {
@@ -101,5 +101,20 @@ describe("resolveRunCommandCwd", () => {
   it("resolves other relative cwd values from the default cwd", () => {
     expect(resolveRunCommandCwd("subdir", "/paperclip/workspace"))
       .toBe("/paperclip/workspace/subdir");
+  });
+});
+
+describe("readPaperclipEnv", () => {
+  it("returns sorted PAPERCLIP_* env vars only", () => {
+    expect(readPaperclipEnv({
+      PATH: "/bin",
+      PAPERCLIP_RUN_ID: "run-1",
+      PAPERCLIP_API_KEY: "key",
+      PAPERCLIP_TASK_ID: "task-1"
+    })).toEqual({
+      PAPERCLIP_API_KEY: "key",
+      PAPERCLIP_RUN_ID: "run-1",
+      PAPERCLIP_TASK_ID: "task-1"
+    });
   });
 });

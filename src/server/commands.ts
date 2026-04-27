@@ -54,13 +54,18 @@ export async function runTrustedCommand(
 
   const args = invocation.args;
   const cwd = resolveRunCommandCwd(input.cwd, options.defaultCwd);
+  const env = readProcessEnv();
 
   await ensureAbsoluteDirectory(cwd);
   await options.onLog("stdout", `[ollama:tool] run_command ${formatCommand(command, args)}\n`);
+  await options.onLog(
+    "stdout",
+    `[ollama:tool] PAPERCLIP_* env ${JSON.stringify(readPaperclipEnv(env), null, 2)}\n`
+  );
 
   const result = await runChildProcess(options.runId, command, args, {
     cwd,
-    env: readProcessEnv(),
+    env,
     timeoutSec: options.timeoutSec,
     graceSec: 5,
     onLog: options.onLog,
@@ -283,6 +288,14 @@ function readProcessEnv(): Record<string, string> {
     Object.entries(process.env).filter((entry): entry is [string, string] => {
       return typeof entry[1] === "string";
     })
+  );
+}
+
+export function readPaperclipEnv(env: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(env)
+      .filter(([key]) => key.startsWith("PAPERCLIP_"))
+      .sort(([left], [right]) => left.localeCompare(right))
   );
 }
 
