@@ -2,6 +2,10 @@
 
 Release sections are derived from the package version present in each git commit.
 
+## 0.4.10 - 2026-04-27
+
+- combined tool command and Paperclip environment logging
+
 ## 0.4.9 - 2026-04-27
 
 - logged Paperclip tool environment variables for debugging

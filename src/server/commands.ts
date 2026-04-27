@@ -55,12 +55,13 @@ export async function runTrustedCommand(
   const args = invocation.args;
   const cwd = resolveRunCommandCwd(input.cwd, options.defaultCwd);
   const env = readProcessEnv();
+  const paperclipEnv = readPaperclipEnv(env);
 
   await ensureAbsoluteDirectory(cwd);
-  await options.onLog("stdout", `[ollama:tool] run_command ${formatCommand(command, args)}\n`);
   await options.onLog(
     "stdout",
-    `[ollama:tool] PAPERCLIP_* env ${JSON.stringify(readPaperclipEnv(env), null, 2)}\n`
+    `[ollama:tool] run_command ${formatCommand(command, args)}\n`
+      + `[ollama:tool] PAPERCLIP_* env (${Object.keys(paperclipEnv).length}) ${JSON.stringify(paperclipEnv, null, 2)}\n`
   );
 
   const result = await runChildProcess(options.runId, command, args, {

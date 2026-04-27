@@ -1,6 +1,6 @@
 {
   "name": "paperclip-ollama-adapter",
-  "version": "0.4.9",
+  "version": "0.4.10",
   "description": "Local Ollama adapter for Paperclip.",
   "license": "Apache-2.0",
   "type": "module",
