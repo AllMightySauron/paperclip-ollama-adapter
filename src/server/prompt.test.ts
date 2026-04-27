@@ -65,8 +65,12 @@ describe("buildPrompt", () => {
     expect(prompt).toContain("Command execution is enabled through the run_command tool.");
     expect(prompt).toContain('If you set "cwd", use an absolute path such as "/paperclip/...".');
     expect(prompt).toContain('Read a file: command="cat", args=["path/to/file.md"]');
+    expect(prompt).toContain('Pass an argument with spaces: command="printf", args=["%s\\n", "hello world"]');
     expect(prompt).toContain('List recursively: command="ls", args=["-R", "path/to/dir"]');
     expect(prompt).toContain('use command="sh" and args=["-lc", "..."]');
+    expect(prompt).toContain("Do not use sh -lc just because an argument contains spaces");
+    expect(prompt).toContain("quote every shell argument that contains spaces");
+    expect(prompt).toContain('-H \\"Authorization: Bearer $PAPERCLIP_API_KEY\\"');
     expect(prompt).toContain("Find while suppressing errors");
     expect(prompt).toContain('Do not write args=["ls-R"].');
   });

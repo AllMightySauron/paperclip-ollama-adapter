@@ -52,6 +52,28 @@ describe("parseRunCommandInput", () => {
     });
   });
 
+  it("shell-quotes split explicit shell invocation args with whitespace", () => {
+    expect(parseRunCommandInput({
+      command: "sh",
+      args: [
+        "-lc",
+        "curl",
+        "-sS",
+        "$PAPERCLIP_API_URL/api/agents/me/inbox-lite",
+        "-H",
+        "Authorization: Bearer $PAPERCLIP_API_KEY",
+        "-H",
+        "X-Paperclip-Run-Id: $PAPERCLIP_RUN_ID"
+      ]
+    })).toEqual({
+      command: "sh",
+      args: [
+        "-lc",
+        "curl \"-sS\" \"$PAPERCLIP_API_URL/api/agents/me/inbox-lite\" \"-H\" \"Authorization: Bearer $PAPERCLIP_API_KEY\" \"-H\" \"X-Paperclip-Run-Id: $PAPERCLIP_RUN_ID\""
+      ]
+    });
+  });
+
   it("shell-quotes args when direct args include shell-only syntax", () => {
     expect(parseRunCommandInput({
       command: "grep",

@@ -48,11 +48,15 @@ Use run_command only when you need local workspace information or need to run a 
 The "command" value must be exactly one executable. The "args" array must contain only that executable's arguments.
 Omit "cwd" unless you need a different directory. If you set "cwd", use an absolute path such as "/paperclip/...".
 If you need shell syntax such as redirects, pipes, or &&, use command="sh" and args=["-lc", "..."].
+Do not use sh -lc just because an argument contains spaces; prefer the args array for that.
+Inside sh -lc strings, quote every shell argument that contains spaces.
 
 Examples:
 - Read a file: command="cat", args=["path/to/file.md"]
+- Pass an argument with spaces: command="printf", args=["%s\\n", "hello world"]
 - List recursively: command="ls", args=["-R", "path/to/dir"]
 - Find while suppressing errors: command="sh", args=["-lc", "find /paperclip -name 'file.md' 2>/dev/null"]
+- Curl with auth: command="sh", args=["-lc", "curl -sS \\"$PAPERCLIP_API_URL/api/agents/me/inbox-lite\\" -H \\"Authorization: Bearer $PAPERCLIP_API_KEY\\" -H \\"X-Paperclip-Run-Id: $PAPERCLIP_RUN_ID\\""]
 - Run tests: command="npm", args=["test"]
 
 Do not write args=["ls-R"]. Use args=["-R"] instead.`;

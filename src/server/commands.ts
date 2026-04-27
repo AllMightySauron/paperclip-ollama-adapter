@@ -133,6 +133,10 @@ function normalizeCommandInvocation(input: RunCommandInput): { command: string; 
   const command = input.command.trim();
   const args = normalizeArgs(input.args, command);
 
+  if (isShellExecutable(command)) {
+    return { command, args: normalizeExplicitShellArgs(args) };
+  }
+
   if (!shouldRunViaShell(command, args)) {
     return { command, args };
   }
@@ -169,8 +173,37 @@ function buildShellCommand(command: string, args: string[]): string {
   return [command, ...args.map(shellQuote)].join(" ");
 }
 
+function normalizeExplicitShellArgs(args: string[]): string[] {
+  const shellFlag = args[0];
+  const shellCommand = args[1];
+  if (shellFlag !== "-lc" || shellCommand === undefined) {
+    return args;
+  }
+
+  if (args.length === 2) {
+    return args;
+  }
+
+  return [shellFlag, buildExpandableShellCommand(shellCommand, args.slice(2))];
+}
+
 function shellQuote(value: string): string {
   return `'${value.replaceAll("'", "'\\''")}'`;
+}
+
+function buildExpandableShellCommand(command: string, args: string[]): string {
+  if (args.length === 0) {
+    return command;
+  }
+
+  return [command, ...args.map(shellDoubleQuote)].join(" ");
+}
+
+function shellDoubleQuote(value: string): string {
+  return `"${value
+    .replaceAll("\\", "\\\\")
+    .replaceAll("\"", "\\\"")
+    .replaceAll("`", "\\`")}"`;
 }
 
 function normalizeArgs(value: unknown, command: string): string[] {

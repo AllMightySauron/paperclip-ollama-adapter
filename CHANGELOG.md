@@ -2,9 +2,13 @@
 
 Release sections are derived from the package version present in each git commit.
 
+## 0.4.7 - 2026-04-27
+
+- fixed shell argument quoting for tool calls
+
 ## 0.4.6 - 2026-04-26
 
-- version bump
+- timeout for Ollama HTTP calls
 
 ## 0.4.5 - 2026-04-26
 
