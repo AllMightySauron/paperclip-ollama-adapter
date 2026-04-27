@@ -52,6 +52,22 @@ describe("parseRunCommandInput", () => {
     });
   });
 
+  it("preserves quotes in explicit shell command strings", () => {
+    expect(parseRunCommandInput({
+      command: "sh",
+      args: [
+        "-lc",
+        "curl -sS \"$PAPERCLIP_API_URL/api/agents/me\" -H \"Authorization: Bearer $PAPERCLIP_API_KEY\""
+      ]
+    })).toEqual({
+      command: "sh",
+      args: [
+        "-lc",
+        "curl -sS \"$PAPERCLIP_API_URL/api/agents/me\" -H \"Authorization: Bearer $PAPERCLIP_API_KEY\""
+      ]
+    });
+  });
+
   it("shell-quotes split explicit shell invocation args with whitespace", () => {
     expect(parseRunCommandInput({
       command: "sh",

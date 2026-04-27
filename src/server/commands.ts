@@ -259,13 +259,15 @@ function normalizeArgs(value: unknown, command: string): string[] {
  * while normal arguments are only stripped of wrapper artifacts and quotes.
  */
 function normalizeArgArtifact(arg: string, index: number, command: string): string {
-  const cleaned = arg
+  const withoutArtifacts = arg
     .replaceAll("<|\"|", "")
     .replaceAll("<|'|", "")
     .replaceAll("<|", "")
     .replaceAll("|>", "")
-    .replaceAll("\"", "")
     .trim();
+  const cleaned = shouldPreserveArgQuotes(command, index)
+    ? withoutArtifacts
+    : withoutArtifacts.replaceAll("\"", "");
 
   if (index !== 0) {
     return cleaned;
@@ -282,6 +284,10 @@ function normalizeArgArtifact(arg: string, index: number, command: string): stri
   }
 
   return cleaned;
+}
+
+function shouldPreserveArgQuotes(command: string, index: number): boolean {
+  return isShellExecutable(command.trim()) && index > 0;
 }
 
 function readProcessEnv(): Record<string, string> {
