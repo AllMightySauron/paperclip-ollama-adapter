@@ -170,7 +170,7 @@ function buildShellCommand(command: string, args: string[]): string {
     return command;
   }
 
-  return [command, ...args.map(shellQuote)].join(" ");
+  return [command, ...args.map(shellQuoteIfNeeded)].join(" ");
 }
 
 function normalizeExplicitShellArgs(args: string[]): string[] {
@@ -196,7 +196,31 @@ function buildExpandableShellCommand(command: string, args: string[]): string {
     return command;
   }
 
-  return [command, ...args.map(shellDoubleQuote)].join(" ");
+  return [command, ...args.map(shellDoubleQuoteIfNeeded)].join(" ");
+}
+
+function shellQuoteIfNeeded(value: string): string {
+  if (!needsShellQuote(value)) {
+    return value;
+  }
+
+  return shellQuote(value);
+}
+
+function shellDoubleQuoteIfNeeded(value: string): string {
+  if (!needsExpandableShellQuote(value)) {
+    return value;
+  }
+
+  return shellDoubleQuote(value);
+}
+
+function needsShellQuote(value: string): boolean {
+  return value === "" || /\s/.test(value);
+}
+
+function needsExpandableShellQuote(value: string): boolean {
+  return needsShellQuote(value) || /(?:^|[^\\])\$(?:[A-Za-z_][A-Za-z0-9_]*|\{[^}]+\})/.test(value);
 }
 
 function shellDoubleQuote(value: string): string {

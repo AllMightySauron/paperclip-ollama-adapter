@@ -2,6 +2,10 @@
 
 Release sections are derived from the package version present in each git commit.
 
+## 0.4.8 - 2026-04-27
+
+- refined shell quoting for environment variable arguments
+
 ## 0.4.7 - 2026-04-27
 
 - fixed shell argument quoting for tool calls

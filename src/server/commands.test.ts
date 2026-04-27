@@ -69,7 +69,7 @@ describe("parseRunCommandInput", () => {
       command: "sh",
       args: [
         "-lc",
-        "curl \"-sS\" \"$PAPERCLIP_API_URL/api/agents/me/inbox-lite\" \"-H\" \"Authorization: Bearer $PAPERCLIP_API_KEY\" \"-H\" \"X-Paperclip-Run-Id: $PAPERCLIP_RUN_ID\""
+        "curl -sS \"$PAPERCLIP_API_URL/api/agents/me/inbox-lite\" -H \"Authorization: Bearer $PAPERCLIP_API_KEY\" -H \"X-Paperclip-Run-Id: $PAPERCLIP_RUN_ID\""
       ]
     });
   });
@@ -80,7 +80,7 @@ describe("parseRunCommandInput", () => {
       args: ["hello world", "README.md"]
     })).toEqual({
       command: "sh",
-      args: ["-lc", "grep 'hello world' 'README.md'"]
+      args: ["-lc", "grep 'hello world' README.md"]
     });
   });
 });
