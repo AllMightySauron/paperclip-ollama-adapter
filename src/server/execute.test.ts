@@ -103,14 +103,60 @@ describe("buildToolEnv", () => {
       },
       config: {},
       context: {
-        taskId: "task-1"
+        taskId: "task-1",
+        wakeReason: "manual",
+        wakeCommentId: "comment-1",
+        approvalId: "approval-1",
+        approvalStatus: "approved",
+        linkedIssueIds: ["issue-1", "issue-2"],
+        wakePayload: {
+          latestCommentId: "comment-1"
+        },
+        paperclipWorkspace: {
+          cwd: "/paperclip/workspace"
+        }
       },
       onLog: async () => {}
     })).toEqual({
       PAPERCLIP_AGENT_ID: "agent-1",
+      PAPERCLIP_APPROVAL_ID: "approval-1",
+      PAPERCLIP_APPROVAL_STATUS: "approved",
       PAPERCLIP_COMPANY_ID: "company-1",
+      PAPERCLIP_LINKED_ISSUE_IDS: "issue-1,issue-2",
       PAPERCLIP_RUN_ID: "run-1",
-      PAPERCLIP_TASK_ID: "task-1"
+      PAPERCLIP_TASK_ID: "task-1",
+      PAPERCLIP_WAKE_COMMENT_ID: "comment-1",
+      PAPERCLIP_WAKE_PAYLOAD_JSON: "{\"latestCommentId\":\"comment-1\"}",
+      PAPERCLIP_WAKE_REASON: "manual",
+      PAPERCLIP_WORKSPACE_CWD: "/paperclip/workspace"
+    });
+  });
+
+  it("passes through string wake payload and linked issue values", () => {
+    expect(buildToolEnv({
+      runId: "run-1",
+      agent: {
+        id: "agent-1",
+        companyId: "company-1",
+        name: "Test Agent",
+        adapterType: "ollama_local",
+        adapterConfig: {}
+      },
+      runtime: {
+        sessionId: null,
+        sessionParams: null,
+        sessionDisplayId: null,
+        taskKey: null
+      },
+      config: {},
+      context: {
+        linkedIssueIds: "issue-1,issue-2",
+        wakePayloadJson: "{\"latestCommentId\":\"comment-1\"}"
+      },
+      onLog: async () => {}
+    })).toMatchObject({
+      PAPERCLIP_LINKED_ISSUE_IDS: "issue-1,issue-2",
+      PAPERCLIP_WAKE_PAYLOAD_JSON: "{\"latestCommentId\":\"comment-1\"}"
     });
   });
 

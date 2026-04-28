@@ -152,7 +152,14 @@ export function buildToolEnv(ctx: AdapterExecutionContext): Record<string, strin
     ["PAPERCLIP_COMPANY_ID", ctx.agent.companyId],
     ["PAPERCLIP_AGENT_ID", ctx.agent.id],
     ["PAPERCLIP_RUN_ID", ctx.runId],
-    ["PAPERCLIP_TASK_ID", readTaskId(ctx)]
+    ["PAPERCLIP_TASK_ID", readTaskId(ctx)],
+    ["PAPERCLIP_WAKE_REASON", readContextString(ctx.context, "wakeReason")],
+    ["PAPERCLIP_WAKE_COMMENT_ID", readContextString(ctx.context, "wakeCommentId")],
+    ["PAPERCLIP_APPROVAL_ID", readContextString(ctx.context, "approvalId")],
+    ["PAPERCLIP_APPROVAL_STATUS", readContextString(ctx.context, "approvalStatus")],
+    ["PAPERCLIP_LINKED_ISSUE_IDS", readContextStringList(ctx.context, "linkedIssueIds")],
+    ["PAPERCLIP_WAKE_PAYLOAD_JSON", readWakePayloadJson(ctx.context)],
+    ["PAPERCLIP_WORKSPACE_CWD", readPaperclipWorkspaceCwd(ctx.context)]
   ].filter((entry): entry is [string, string] => {
     return typeof entry[1] === "string" && entry[1].trim() !== "";
   }));
@@ -174,6 +181,60 @@ function readContextString(context: unknown, key: string): string | undefined {
 
   const value = (context as Record<string, unknown>)[key];
   return typeof value === "string" ? value : undefined;
+}
+
+function readContextStringList(context: unknown, key: string): string | undefined {
+  if (typeof context !== "object" || context === null) {
+    return undefined;
+  }
+
+  const value = (context as Record<string, unknown>)[key];
+  if (typeof value === "string") {
+    return value;
+  }
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const strings = value.filter((item): item is string => {
+    return typeof item === "string" && item.trim() !== "";
+  });
+  return strings.length > 0 ? strings.join(",") : undefined;
+}
+
+function readWakePayloadJson(context: unknown): string | undefined {
+  if (typeof context !== "object" || context === null) {
+    return undefined;
+  }
+
+  const record = context as Record<string, unknown>;
+  if (typeof record.wakePayloadJson === "string") {
+    return record.wakePayloadJson;
+  }
+  if (typeof record.wakePayloadJSON === "string") {
+    return record.wakePayloadJSON;
+  }
+
+  const payload = record.wakePayload;
+  if (payload === undefined) {
+    return undefined;
+  }
+
+  return JSON.stringify(payload);
+}
+
+function readPaperclipWorkspaceCwd(context: unknown): string | undefined {
+  if (typeof context !== "object" || context === null) {
+    return undefined;
+  }
+
+  const workspace = (context as Record<string, unknown>).paperclipWorkspace;
+  if (typeof workspace !== "object" || workspace === null) {
+    return undefined;
+  }
+
+  const cwd = (workspace as Record<string, unknown>).cwd;
+  return typeof cwd === "string" ? cwd : undefined;
 }
 
 function readCommandCwdSource(
