@@ -77,7 +77,7 @@ export async function invokeOllama(
         signal: controller.signal
       }));
 
-      const payload = await readJsonResponse(response);
+      const payload = await readOllamaResponsePayload(response, request.streaming ?? true, request.onLog);
       rawResponses.push(payload);
       await logOllama(request, response.ok ? "stdout" : "stderr", "Received Ollama chat response", {
         endpoint: chatUrl,
@@ -251,7 +251,7 @@ export function buildOllamaChatRequestBody(
   return {
     model: request.model,
     messages,
-    stream: false,
+    stream: request.streaming ?? true,
     ...(request.think !== undefined ? { think: request.think } : {}),
     ...(request.commandExecution?.enabled ? { tools: [runCommandTool] } : {})
   };
@@ -317,6 +317,130 @@ async function readJsonResponse(response: Response): Promise<unknown> {
   } catch {
     throw new Error("Ollama returned invalid JSON");
   }
+}
+
+export async function readOllamaResponsePayload(
+  response: Response,
+  streaming: boolean,
+  onLog?: OllamaInvocationRequest["onLog"]
+): Promise<unknown> {
+  if (!streaming) {
+    return readJsonResponse(response);
+  }
+
+  const chunks = await readOllamaStreamChunks(response, onLog);
+
+  return mergeOllamaStreamChunks(chunks);
+}
+
+async function readOllamaStreamChunks(
+  response: Response,
+  onLog?: OllamaInvocationRequest["onLog"]
+): Promise<unknown[]> {
+  if (!response.body) {
+    return readOllamaStreamLines(await response.text(), onLog);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  const chunks: unknown[] = [];
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split(/\r?\n/);
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      const chunk = await parseOllamaStreamLine(line, onLog);
+      if (chunk !== null) {
+        chunks.push(chunk);
+      }
+    }
+  }
+
+  buffer += decoder.decode();
+  const finalChunk = await parseOllamaStreamLine(buffer, onLog);
+  if (finalChunk !== null) {
+    chunks.push(finalChunk);
+  }
+
+  return chunks;
+}
+
+async function readOllamaStreamLines(
+  text: string,
+  onLog?: OllamaInvocationRequest["onLog"]
+): Promise<unknown[]> {
+  const chunks: unknown[] = [];
+  for (const line of text.split(/\r?\n/)) {
+    const chunk = await parseOllamaStreamLine(line, onLog);
+    if (chunk !== null) {
+      chunks.push(chunk);
+    }
+  }
+  return chunks;
+}
+
+async function parseOllamaStreamLine(
+  line: string,
+  onLog?: OllamaInvocationRequest["onLog"]
+): Promise<unknown | null> {
+  const trimmed = line.trim();
+  if (trimmed === "") {
+    return null;
+  }
+
+  let chunk: unknown;
+  try {
+    chunk = JSON.parse(trimmed) as unknown;
+  } catch {
+    throw new Error("Ollama returned invalid streamed JSON");
+  }
+
+  const content = readMessageContent(readRecord(chunk));
+  if (content && onLog) {
+    await onLog("stdout", content);
+  }
+
+  return chunk;
+}
+
+function mergeOllamaStreamChunks(chunks: unknown[]): unknown {
+  if (chunks.length === 0) {
+    return null;
+  }
+
+  let finalRecord: Record<string, unknown> = {};
+  let content = "";
+  let toolCalls: unknown[] | undefined;
+
+  for (const chunk of chunks) {
+    const record = readRecord(chunk);
+    finalRecord = {
+      ...finalRecord,
+      ...record
+    };
+
+    const message = readRecord(record.message);
+    content += readString(message.content) ?? "";
+    if (Array.isArray(message.tool_calls)) {
+      toolCalls = message.tool_calls;
+    }
+  }
+
+  return {
+    ...finalRecord,
+    message: {
+      ...readRecord(finalRecord.message),
+      content,
+      ...(toolCalls ? { tool_calls: toolCalls } : {})
+    }
+  };
 }
 
 /** Maps a successful Ollama response into Paperclip's provider-neutral result. */

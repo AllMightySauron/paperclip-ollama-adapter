@@ -82,6 +82,7 @@ export async function execute(
     prompt,
     timeoutMs: config.ollamaTimeoutSec * 1000,
     session: parseSession(ctx.runtime.sessionParams),
+    streaming: config.streaming ?? true,
     runId: ctx.runId,
     onLog: ctx.onLog,
     toolEnv: buildToolEnv(ctx),

@@ -5,7 +5,8 @@ import {
   buildOllamaApiUrl,
   invokeOllama,
   listOllamaModels,
-  parseOllamaTagsResponse
+  parseOllamaTagsResponse,
+  readOllamaResponsePayload
 } from "./ollama.js";
 
 describe("buildOllamaApiUrl", () => {
@@ -37,9 +38,22 @@ describe("buildOllamaChatRequestBody", () => {
         { role: "system", content: "You are a Paperclip agent." },
         { role: "user", content: "Continue your work." }
       ],
-      stream: false,
+      stream: true,
       think: "low"
     });
+  });
+
+  it("can disable streaming in the chat request body", () => {
+    const body = buildOllamaChatRequestBody({
+      baseUrl: "http://127.0.0.1:11434",
+      model: "llama3.2",
+      prompt: "Continue your work.",
+      timeoutMs: 120_000,
+      session: null,
+      streaming: false
+    });
+
+    expect(body.stream).toBe(false);
   });
 
   it("describes run_command with direct args and shell support", () => {
@@ -102,7 +116,7 @@ describe("invokeOllama", () => {
         body: JSON.stringify({
           model: "llama3.2",
           messages: [{ role: "user", content: "Continue." }],
-          stream: false
+          stream: true
         })
       })
     );
@@ -308,6 +322,37 @@ describe("invokeOllama", () => {
     expect(fetchMock.mock.calls[1]?.[1]?.body).toContain("\"role\":\"tool\"");
     expect(fetchMock.mock.calls[1]?.[1]?.body).toContain("tool ok");
     expect(logs.map((log) => log.chunk).join("\n")).toContain("[ollama:tool] run_command");
+  });
+});
+
+describe("readOllamaResponsePayload", () => {
+  it("aggregates streamed Ollama chat chunks", async () => {
+    const logs: string[] = [];
+    await expect(readOllamaResponsePayload(new Response([
+      JSON.stringify({
+        model: "llama3.2",
+        message: { role: "assistant", content: "Hello " },
+        done: false
+      }),
+      JSON.stringify({
+        model: "llama3.2",
+        message: { role: "assistant", content: "world." },
+        done: true,
+        prompt_eval_count: 2,
+        eval_count: 3
+      })
+    ].join("\n")), true, async (_stream, chunk) => {
+      logs.push(chunk);
+    })).resolves.toMatchObject({
+      model: "llama3.2",
+      message: {
+        content: "Hello world."
+      },
+      done: true,
+      prompt_eval_count: 2,
+      eval_count: 3
+    });
+    expect(logs).toEqual(["Hello ", "world."]);
   });
 });
 

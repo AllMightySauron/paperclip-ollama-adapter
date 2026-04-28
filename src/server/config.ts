@@ -35,6 +35,7 @@ export function parseConfig(raw: Record<string, unknown>): ConfigParseResult {
     DEFAULT_OLLAMA_TIMEOUT_SEC
   );
   const logging = readBoolean(readConfigValue(raw, schemaValues, "logging"));
+  const streaming = readBoolean(readConfigValue(raw, schemaValues, "streaming")) ?? true;
   const enableCommandExecution = readBoolean(readConfigValue(raw, schemaValues, "enableCommandExecution")) ?? false;
   const commandCwd = readString(readConfigValue(raw, schemaValues, "commandCwd"))
     ?? readString(readConfigValue(raw, schemaValues, "cwd"));
@@ -100,6 +101,7 @@ export function parseConfig(raw: Record<string, unknown>): ConfigParseResult {
       baseUrl: stripTrailingSlash(baseUrl),
       timeoutSec,
       ollamaTimeoutSec,
+      streaming,
       enableCommandExecution,
       commandTimeoutSec,
       maxToolCalls,

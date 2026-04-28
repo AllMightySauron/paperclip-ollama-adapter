@@ -48,6 +48,7 @@ When creating or editing an agent, select **Local Ollama** as the adapter type a
 | `timeoutSec` | No | Paperclip's built-in run timeout control. |
 | `ollamaTimeoutSec` | No | HTTP timeout for each Ollama `/api/chat` call, including skill classification and generation. Defaults to 60 seconds; increase this for long non-streaming generations. |
 | `logging` | No | Enables detailed logs for prompt rendering, Ollama `/api/chat` request bodies, raw replies, parsed results, and errors. Defaults to `false`; logs may include sensitive prompt/context data. |
+| `streaming` | No | Requests streamed Ollama responses, forwards content chunks to run logs, and aggregates chunks locally. Defaults to `true`; disable this for Ollama-compatible endpoints with broken streaming support. |
 | `enableCommandExecution` | No | Enables trusted local command execution through Ollama tool calls. Defaults to `false`. |
 | `commandCwd` | No | Absolute working directory for model-requested commands. Defaults to `context.paperclipWorkspace.cwd` from the Paperclip project workspace when available, otherwise the adapter process directory. |
 | `commandTimeoutSec` | No | Maximum seconds each model-requested command may run (default: 120). |
@@ -130,6 +131,7 @@ Command execution requires a model that supports native Ollama tool calling and 
 Known working model families for tool execution include:
 
 - Gemma family models. `gemma4` is known to work.
+- Qwen family models. `qwen-3.5` and `qwen3.6` are known to work.
 - DeepSeek reasoning family models. `deepseek-r1` is known to work.
 
 Some models in the broader DeepSeek family may imitate tool calls in plain text instead of returning native Ollama `message.tool_calls`; those models will not execute commands through this adapter.
@@ -165,7 +167,7 @@ The same values are also included in `resultJson.generation` as `outputTokens`, 
 ## Major TODOs
 
 - Fill in CLI event formatting once execution emits stable structured events.
-- Optionally support streamed Ollama responses and forward chunks to `ctx.onLog`.
+- Add richer structured CLI event formatting.
 
 ## License
 

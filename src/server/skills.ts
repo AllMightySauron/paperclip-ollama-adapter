@@ -13,7 +13,7 @@ import {
 } from "@paperclipai/adapter-utils/server-utils";
 import { ADAPTER_TYPE, type OllamaAdapterConfig, type OllamaLogFn, type OllamaSkill } from "../types.js";
 import { buildOllamaFetchInit } from "./http.js";
-import { buildOllamaApiUrl, OLLAMA_CHAT_PATH } from "./ollama.js";
+import { buildOllamaApiUrl, OLLAMA_CHAT_PATH, readOllamaResponsePayload } from "./ollama.js";
 
 const moduleDir = path.dirname(fileURLToPath(import.meta.url));
 
@@ -150,7 +150,7 @@ async function classifySkillCandidates(
         content: buildSkillClassifierPrompt(wakeContext, candidates)
       }
     ],
-    stream: false,
+    stream: options.config.streaming ?? true,
     ...(options.config.think !== undefined ? { think: options.config.think } : {})
   };
 
@@ -171,7 +171,7 @@ async function classifySkillCandidates(
       signal: controller.signal
     }));
 
-    const payload = await response.json() as unknown;
+    const payload = await readOllamaResponsePayload(response, options.config.streaming ?? true, options.onLog);
     if (!response.ok) {
       return {
         includeSkillKeys: new Set(),

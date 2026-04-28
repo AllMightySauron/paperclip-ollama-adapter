@@ -253,7 +253,7 @@ Long instructions.`);
         expect.objectContaining({
           method: "POST",
           dispatcher: expect.any(Object),
-          body: expect.stringContaining("\"stream\":false")
+          body: expect.stringContaining("\"stream\":true")
         })
       );
       const joinedLogs = logs.map((log) => log.chunk).join("\n");

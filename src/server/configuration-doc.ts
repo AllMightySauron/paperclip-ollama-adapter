@@ -15,6 +15,7 @@ Core fields:
 - \`timeoutSec\` (number, optional): Paperclip's built-in run timeout control. Defaults to \`120\`.
 - \`ollamaTimeoutSec\` (number, optional): HTTP timeout for each Ollama \`/api/chat\` call, including skill classification and generation. Defaults to \`60\`; increase this for long non-streaming generations.
 - \`logging\` (boolean, optional): Enables detailed Paperclip logs for prompt rendering, Ollama chat request bodies, raw Ollama replies, parsed results, and failures. Defaults to \`false\`.
+- \`streaming\` (boolean, optional): Requests streamed Ollama responses, forwards content chunks to run logs, and aggregates chunks locally. Defaults to \`true\`.
 - \`think\` (false | "low" | "medium" | "high", optional): Adapter-specific thinking control. Use \`false\` to disable thinking. When set, this overrides Paperclip's built-in \`thinkingEffort\` value.
 - \`enableCommandExecution\` (boolean, optional): Enables trusted local \`run_command\` tool calls from Ollama. Defaults to \`false\`.
 - \`commandCwd\` (string, optional): Absolute working directory for model-requested commands. Defaults to \`context.paperclipWorkspace.cwd\` from the Paperclip project workspace when available, otherwise the adapter process directory.
@@ -37,5 +38,5 @@ Command execution requires a model that returns native Ollama \`message.tool_cal
 Major TODOs before production use:
 - Decide what session state should be persisted across heartbeats.
 - Add Paperclip API fetches for thin context runs.
-- Optionally support streamed responses and forward chunks through Paperclip's \`onLog\`.
+- Add richer structured CLI event formatting.
 `;

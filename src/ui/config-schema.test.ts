@@ -15,6 +15,7 @@ describe("getConfigSchema", () => {
       "baseUrl",
       "logging",
       "ollamaTimeoutSec",
+      "streaming",
       "think",
       "enableCommandExecution",
       "skillSelectionMode",
@@ -33,6 +34,10 @@ describe("getConfigSchema", () => {
     expect(schema.fields.find((field) => field.key === "ollamaTimeoutSec")).toMatchObject({
       type: "number",
       default: 60
+    });
+    expect(schema.fields.find((field) => field.key === "streaming")).toMatchObject({
+      type: "select",
+      default: "true"
     });
     expect(schema.fields.find((field) => field.key === "enableCommandExecution")).toMatchObject({
       type: "select",
@@ -91,6 +96,7 @@ describe("buildConfigFromFormValues", () => {
       timeoutSec: "30",
       ollamaTimeoutSec: "45",
       logging: "true",
+      streaming: "false",
       enableCommandExecution: "true",
       commandCwd: "/tmp",
       commandTimeoutSec: "20",
@@ -103,6 +109,7 @@ describe("buildConfigFromFormValues", () => {
       timeoutSec: 30,
       ollamaTimeoutSec: 45,
       logging: true,
+      streaming: false,
       enableCommandExecution: true,
       commandCwd: "/tmp",
       commandTimeoutSec: 20,

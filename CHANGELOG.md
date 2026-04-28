@@ -2,6 +2,10 @@
 
 Release sections are derived from the package version present in each git commit.
 
+## 0.5.0 - 2026-04-28
+
+- added streamed Ollama response support with chunk forwarding
+
 ## 0.4.13 - 2026-04-28
 
 - injected optional Paperclip wake context variables into tool environments

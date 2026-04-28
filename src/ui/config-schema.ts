@@ -36,6 +36,17 @@ export const ollamaConfigSchema: AdapterConfigSchema = {
       hint: "HTTP timeout for each Ollama /api/chat request, including skill classification and generation. Increase this for long non-streaming generations."
     },
     {
+      key: "streaming",
+      label: "Streaming",
+      type: "select",
+      default: "true",
+      hint: "Request streamed Ollama responses and aggregate chunks locally. Disable if your Ollama-compatible endpoint has streaming issues.",
+      options: [
+        { label: "Enabled", value: "true" },
+        { label: "Disabled", value: "false" }
+      ]
+    },
+    {
       key: "think",
       label: "Thinking",
       type: "select",

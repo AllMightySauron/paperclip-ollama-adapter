@@ -15,6 +15,7 @@ export type OllamaConfigFormValues = Partial<{
   timeoutSec: string | number;
   ollamaTimeoutSec: string | number;
   logging: boolean | "true" | "false";
+  streaming: boolean | "true" | "false";
   enableCommandExecution: boolean | "true" | "false";
   commandCwd: string;
   commandTimeoutSec: string | number;
@@ -39,6 +40,9 @@ export function buildConfigFromFormValues(
 
   if (values.logging !== undefined) {
     config.logging = normalizeBooleanFormValue(values.logging);
+  }
+  if (values.streaming !== undefined) {
+    config.streaming = normalizeBooleanFormValue(values.streaming);
   }
   if (values.enableCommandExecution !== undefined) {
     config.enableCommandExecution = normalizeBooleanFormValue(values.enableCommandExecution);

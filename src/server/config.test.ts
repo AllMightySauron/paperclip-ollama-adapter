@@ -22,7 +22,8 @@ describe("parseConfig", () => {
       model: "llama3.2",
       baseUrl: DEFAULT_BASE_URL,
       timeoutSec: DEFAULT_TIMEOUT_SEC,
-      ollamaTimeoutSec: DEFAULT_OLLAMA_TIMEOUT_SEC
+      ollamaTimeoutSec: DEFAULT_OLLAMA_TIMEOUT_SEC,
+      streaming: true
     });
   });
 
@@ -59,6 +60,18 @@ describe("parseConfig", () => {
     expect(result.config?.logging).toBe(expected);
   });
 
+  it.each([
+    [true, true],
+    [false, false],
+    ["true", true],
+    ["false", false]
+  ])("accepts streaming=%p", (input, expected) => {
+    const result = parseConfig({ model: "llama3.2", streaming: input });
+
+    expect(result.errors).toEqual([]);
+    expect(result.config?.streaming).toBe(expected);
+  });
+
   it("reads custom UI values from adapterSchemaValues when Paperclip nests schema fields", () => {
     const result = parseConfig({
       model: "llama3.2",
@@ -66,6 +79,7 @@ describe("parseConfig", () => {
         baseUrl: "http://ollama.example.test:11434",
         ollamaTimeoutSec: "45",
         logging: "true",
+        streaming: "false",
         enableCommandExecution: "true",
         commandCwd: "/tmp",
         commandTimeoutSec: "15",
@@ -82,6 +96,7 @@ describe("parseConfig", () => {
       timeoutSec: DEFAULT_TIMEOUT_SEC,
       ollamaTimeoutSec: 45,
       logging: true,
+      streaming: false,
       enableCommandExecution: true,
       commandCwd: "/tmp",
       commandTimeoutSec: 15,
@@ -97,6 +112,7 @@ describe("parseConfig", () => {
     expect(result.errors).toEqual([]);
     expect(result.config).toMatchObject({
       enableCommandExecution: false,
+      streaming: true,
       ollamaTimeoutSec: 60,
       commandTimeoutSec: 120,
       maxToolCalls: 8,

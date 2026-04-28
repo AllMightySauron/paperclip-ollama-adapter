@@ -24,6 +24,8 @@ export interface OllamaAdapterConfig {
   ollamaTimeoutSec: number;
   /** When enabled, logs prompts, request payloads, raw responses, and tool activity. */
   logging?: boolean;
+  /** When enabled, requests streamed Ollama responses and aggregates chunks locally. */
+  streaming?: boolean;
   /** Allows the model to request trusted local command execution via run_command. */
   enableCommandExecution?: boolean;
   /** Default absolute working directory for model-requested commands. */
@@ -67,6 +69,7 @@ export interface OllamaInvocationRequest {
   think?: OllamaThinking;
   timeoutMs: number;
   session: OllamaSessionParams | null;
+  streaming?: boolean;
   logging?: boolean;
   onLog?: OllamaLogFn;
   runId?: string;
