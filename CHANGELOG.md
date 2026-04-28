@@ -2,6 +2,10 @@
 
 Release sections are derived from the package version present in each git commit.
 
+## 0.5.1 - 2026-04-28
+
+- fixed streaming UI
+
 ## 0.5.0 - 2026-04-28
 
 - added streamed Ollama response support with chunk forwarding
