@@ -517,6 +517,8 @@ async function executeToolCall(
     defaultCwd: request.commandExecution.cwd,
     timeoutSec: request.commandExecution.timeoutSec,
     onLog: request.onLog,
+    ...(request.logging !== undefined ? { logging: request.logging } : {}),
+    ...(request.toolEnv ? { env: request.toolEnv } : {}),
     ...(request.onSpawn ? { onSpawn: request.onSpawn } : {})
   });
 

@@ -2,6 +2,11 @@
 
 Release sections are derived from the package version present in each git commit.
 
+## 0.4.12 - 2026-04-28
+
+- injected Paperclip IDs into tool command environments
+- gated Paperclip environment variable logging behind detailed logging
+
 ## 0.4.11 - 2026-04-27
 
 - preserved quotes in shell command tool payloads

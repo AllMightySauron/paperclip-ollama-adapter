@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { execute, resolveCommandCwd } from "./execute.js";
+import { buildToolEnv, execute, resolveCommandCwd } from "./execute.js";
 
 describe("execute", () => {
   it("returns a structured config error when model is missing", async () => {
@@ -81,5 +81,58 @@ describe("execute", () => {
     }, "/tmp/override");
 
     expect(cwd).toBe("/tmp/override");
+  });
+});
+
+describe("buildToolEnv", () => {
+  it("builds PAPERCLIP_* tool env vars from execution context", () => {
+    expect(buildToolEnv({
+      runId: "run-1",
+      agent: {
+        id: "agent-1",
+        companyId: "company-1",
+        name: "Test Agent",
+        adapterType: "ollama_local",
+        adapterConfig: {}
+      },
+      runtime: {
+        sessionId: null,
+        sessionParams: null,
+        sessionDisplayId: null,
+        taskKey: "task-key-1"
+      },
+      config: {},
+      context: {
+        taskId: "task-1"
+      },
+      onLog: async () => {}
+    })).toEqual({
+      PAPERCLIP_AGENT_ID: "agent-1",
+      PAPERCLIP_COMPANY_ID: "company-1",
+      PAPERCLIP_RUN_ID: "run-1",
+      PAPERCLIP_TASK_ID: "task-1"
+    });
+  });
+
+  it("falls back to runtime taskKey when context taskId is unavailable", () => {
+    expect(buildToolEnv({
+      runId: "run-1",
+      agent: {
+        id: "agent-1",
+        companyId: "company-1",
+        name: "Test Agent",
+        adapterType: "ollama_local",
+        adapterConfig: {}
+      },
+      runtime: {
+        sessionId: null,
+        sessionParams: null,
+        sessionDisplayId: null,
+        taskKey: "task-key-1"
+      },
+      config: {},
+      context: {},
+      onLog: async () => {}
+    }).PAPERCLIP_TASK_ID).toBe("task-key-1");
   });
 });

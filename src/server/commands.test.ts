@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseRunCommandInput, readPaperclipEnv, resolveRunCommandCwd } from "./commands.js";
+import { mergeCommandEnv, parseRunCommandInput, readPaperclipEnv, resolveRunCommandCwd } from "./commands.js";
 
 describe("parseRunCommandInput", () => {
   it("accepts direct command arguments", () => {
@@ -131,6 +131,22 @@ describe("readPaperclipEnv", () => {
       PAPERCLIP_API_KEY: "key",
       PAPERCLIP_RUN_ID: "run-1",
       PAPERCLIP_TASK_ID: "task-1"
+    });
+  });
+});
+
+describe("mergeCommandEnv", () => {
+  it("overlays adapter-provided tool env vars onto process env", () => {
+    expect(mergeCommandEnv({
+      PATH: "/bin",
+      PAPERCLIP_RUN_ID: "old-run"
+    }, {
+      PAPERCLIP_RUN_ID: "run-1",
+      PAPERCLIP_AGENT_ID: "agent-1"
+    })).toEqual({
+      PATH: "/bin",
+      PAPERCLIP_RUN_ID: "run-1",
+      PAPERCLIP_AGENT_ID: "agent-1"
     });
   });
 });

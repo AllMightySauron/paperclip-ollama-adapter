@@ -20,6 +20,8 @@ export interface RunCommandOptions {
   defaultCwd: string;
   timeoutSec: number;
   onLog: OllamaLogFn;
+  logging?: boolean;
+  env?: Record<string, string>;
   onSpawn?: OllamaSpawnFn;
 }
 
@@ -54,15 +56,17 @@ export async function runTrustedCommand(
 
   const args = invocation.args;
   const cwd = resolveRunCommandCwd(input.cwd, options.defaultCwd);
-  const env = readProcessEnv();
-  const paperclipEnv = readPaperclipEnv(env);
+  const env = mergeCommandEnv(readProcessEnv(), options.env);
 
   await ensureAbsoluteDirectory(cwd);
-  await options.onLog(
-    "stdout",
-    `[ollama:tool] run_command ${formatCommand(command, args)}\n`
-      + `[ollama:tool] PAPERCLIP_* env (${Object.keys(paperclipEnv).length}) ${JSON.stringify(paperclipEnv, null, 2)}\n`
-  );
+  await options.onLog("stdout", `[ollama:tool] run_command ${formatCommand(command, args)}\n`);
+  if (options.logging) {
+    const paperclipEnv = readPaperclipEnv(env);
+    await options.onLog(
+      "stdout",
+      `[ollama:tool] PAPERCLIP_* env (${Object.keys(paperclipEnv).length}) ${JSON.stringify(paperclipEnv, null, 2)}\n`
+    );
+  }
 
   const result = await runChildProcess(options.runId, command, args, {
     cwd,
@@ -304,6 +308,16 @@ export function readPaperclipEnv(env: Record<string, string>): Record<string, st
       .filter(([key]) => key.startsWith("PAPERCLIP_"))
       .sort(([left], [right]) => left.localeCompare(right))
   );
+}
+
+export function mergeCommandEnv(
+  baseEnv: Record<string, string>,
+  overlayEnv: Record<string, string> | undefined
+): Record<string, string> {
+  return {
+    ...baseEnv,
+    ...(overlayEnv ?? {})
+  };
 }
 
 function formatCommand(command: string, args: string[]): string {

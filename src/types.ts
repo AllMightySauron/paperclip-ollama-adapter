@@ -71,6 +71,7 @@ export interface OllamaInvocationRequest {
   onLog?: OllamaLogFn;
   runId?: string;
   onSpawn?: OllamaSpawnFn;
+  toolEnv?: Record<string, string>;
   commandExecution?: OllamaCommandExecutionOptions;
 }
 

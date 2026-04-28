@@ -84,6 +84,7 @@ export async function execute(
     session: parseSession(ctx.runtime.sessionParams),
     runId: ctx.runId,
     onLog: ctx.onLog,
+    toolEnv: buildToolEnv(ctx),
     ...(ctx.onSpawn ? { onSpawn: ctx.onSpawn } : {}),
     commandExecution: {
       enabled: config.enableCommandExecution ?? false,
@@ -144,6 +145,35 @@ export function resolveCommandCwd(
   }
 
   return process.cwd();
+}
+
+export function buildToolEnv(ctx: AdapterExecutionContext): Record<string, string> {
+  return Object.fromEntries([
+    ["PAPERCLIP_COMPANY_ID", ctx.agent.companyId],
+    ["PAPERCLIP_AGENT_ID", ctx.agent.id],
+    ["PAPERCLIP_RUN_ID", ctx.runId],
+    ["PAPERCLIP_TASK_ID", readTaskId(ctx)]
+  ].filter((entry): entry is [string, string] => {
+    return typeof entry[1] === "string" && entry[1].trim() !== "";
+  }));
+}
+
+function readTaskId(ctx: AdapterExecutionContext): string | undefined {
+  const contextTaskId = readContextString(ctx.context, "taskId");
+  if (contextTaskId) {
+    return contextTaskId;
+  }
+
+  return typeof ctx.runtime.taskKey === "string" ? ctx.runtime.taskKey : undefined;
+}
+
+function readContextString(context: unknown, key: string): string | undefined {
+  if (typeof context !== "object" || context === null) {
+    return undefined;
+  }
+
+  const value = (context as Record<string, unknown>)[key];
+  return typeof value === "string" ? value : undefined;
 }
 
 function readCommandCwdSource(
